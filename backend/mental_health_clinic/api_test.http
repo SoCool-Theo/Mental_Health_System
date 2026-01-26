@@ -1,0 +1,25 @@
+### 1. Get a Token (Log In)
+POST http://127.0.0.1:8000/api/token/
+Content-Type: application/json
+
+{
+  "username": "theo",
+  "password": "theo_theo"
+}
+
+### 2. Get Appointments (Using the Token)
+GET http://127.0.0.1:8000/api/clinic/appointments/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5MzU5MTUyLCJpYXQiOjE3NjkzNTU1NTIsImp0aSI6IjhlZDMyMmY0NGI3YjQ5YzViZTkxMmQwZjIyMjljNzg0IiwidXNlcl9pZCI6IjEifQ.VhMHiwzlPK5ynEhaHcIzDmfwapaU5T6ccYrVdNTBjf0
+
+### 3. Login as Patient (John)
+POST http://127.0.0.1:8000/api/token/
+Content-Type: application/json
+
+{
+  "username": "patient_john",
+  "password": "john_john"
+}
+
+### 4. Get Patient's Appointments (Should see ONLY John's)
+GET http://127.0.0.1:8000/api/clinic/appointments/
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzY5MzYwMzU1LCJpYXQiOjE3NjkzNTY3NTUsImp0aSI6ImY4NTBkYjJiOTQ0ZjQ5MzZiMWJkODE2MTI0NTRiYTY2IiwidXNlcl9pZCI6IjQifQ.DrVcdLjbQnUlOyqBOwLhqzOSxWa4hF6N7Y1Tf4RCssA
