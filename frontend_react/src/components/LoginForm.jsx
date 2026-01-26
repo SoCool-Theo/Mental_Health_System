@@ -1,65 +1,99 @@
 import { useState } from "react";
 import api from "../api";
+import "./Login.css"; // Import the new styles
 
-function Login() {
+function LoginForm({ onLoginSuccess }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // This sends the POST request to your Django Token Endpoint
-      const response = await api.post("token/", {
-        username: username,
-        password: password,
-      });
+    setLoading(true);
+    setError("");
 
-      // If successful, we get the tokens!
-      console.log("Login Success:", response.data);
-      alert("Login Successful! Token: " + response.data.access);
-      
-      // TODO: Save token to localStorage (we will do this next)
-        
+    try {
+      const response = await api.post("token/", { username, password });
+      localStorage.setItem("access_token", response.data.access);
+      localStorage.setItem("refresh_token", response.data.refresh);
+      onLoginSuccess();
     } catch (err) {
-      console.error("Full Error:", err); // Print the whole error object
-      if (err.response) {
-        console.log("Server Response:", err.response.data); // <--- THIS IS THE KEY
-        alert("Server said: " + JSON.stringify(err.response.data)); // Pop up the real reason
-      }
-      setError("Login Failed");
+      console.error("Login Error", err);
+      setError("Invalid Username or Password");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "400px", margin: "auto" }}>
-      <h2>Clinic Login</h2>
-      <form onSubmit={handleLogin}>
-        <div>
-          <label>Username:</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
+    <div className="app-root-login">
+      {/* HEADER with LYFE Logo */}
+      <div className="login-header-center">
+        <h1 className="lyfe-title">LYFE</h1>
+      </div>
+
+      <div className="login-shell">
+        <div className="login-card">
+          
+          <div className="login-title-group">
+            <div className="login-title">Sign in to your dashboard</div>
+            <div className="login-subtitle">
+              Manage appointments, patients, and clinic schedules.
+            </div>
+          </div>
+
+          {/* Actual Form Logic Starts Here */}
+          <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+            
+            <div className="form-group">
+              <label className="form-label">Username</label>
+              <input
+                type="text"
+                className="form-input-field"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <input
+                type="password"
+                className="form-input-field"
+                placeholder="••••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Error Message Display */}
+            {error && <div className="error-message">{error}</div>}
+
+            <button type="submit" className="button-primary" disabled={loading}>
+              {loading ? (
+                <span>Loading...</span>
+              ) : (
+                <>
+                  <iconify-icon icon="lucide:log-in" style={{ fontSize: "16px" }}></iconify-icon>
+                  <span>Sign in</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="login-footer">
+            <span>Forgot your credentials?</span>
+            <span className="form-link">Contact IT Support</span>
+          </div>
+
         </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={{ width: "100%", padding: "8px", marginBottom: "10px" }}
-          />
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" style={{ padding: "10px 20px" }}>
-          Login
-        </button>
-      </form>
+      </div>
     </div>
   );
 }
 
-export default Login;
+export default LoginForm;
