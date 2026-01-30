@@ -14,3 +14,6 @@ venv/
 # PyCharm
 .idea/
 *.iml
+
+.env
+.env.*
