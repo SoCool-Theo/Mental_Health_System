@@ -1,0 +1,75 @@
+/* src/app/styles/Homepage.css */
+.home-container {
+  font-family: sans-serif;
+  color: #333;
+}
+
+/* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.logo { font-size: 24px; font-weight: bold; letter-spacing: 2px; }
+
+.nav-links { display: flex; gap: 20px; align-items: center; }
+.nav-links a { text-decoration: none; color: #555; font-weight: 500; }
+.nav-links a:hover { color: #000; }
+
+.btn-login {
+  border: 1px solid #333;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+.btn-login:hover { background: #333; color: white !important; }
+
+/* HERO */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 80px 40px;
+  background: #f9fbfb;
+}
+
+.hero-content { max-width: 500px; }
+.hero-content h1 { font-size: 48px; line-height: 1.2; margin-bottom: 20px; }
+.hero-content p { font-size: 18px; color: #666; margin-bottom: 30px; }
+
+.hero-buttons { display: flex; gap: 15px; }
+
+.btn-primary {
+  background: #2c7da0; color: white;
+  padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;
+}
+.btn-secondary {
+  background: white; color: #2c7da0; border: 1px solid #ccc;
+  padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold;
+}
+
+.image-placeholder {
+  font-size: 150px;
+  background: #eaf4f7;
+  width: 400px; height: 300px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 20px;
+}
+
+/* SERVICES */
+.services { padding: 60px 40px; text-align: center; background: #2c7da0; }
+.services h2 { font-size: 32px; margin-bottom: 40px; color: white;}
+
+.service-grid { display: flex; gap: 20px; justify-content: center; color: #2c7da0; }
+
+.service-card {
+  background: white; border: 1px solid #eee;
+  padding: 30px; border-radius: 12px; width: 300px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.footer { padding: 20px; text-align: center; background: #333; color: white; margin-top: 40px; }
