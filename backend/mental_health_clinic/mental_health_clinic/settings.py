@@ -128,7 +128,9 @@ STATIC_URL = 'static/'
 AUTH_USER_MODEL = 'users.User'
 
 #CORs Configuration
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # <--- NEW ONE
+]
 
 # Django Rest Framework Configuration
 REST_FRAMEWORK = {

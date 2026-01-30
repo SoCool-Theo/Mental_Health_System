@@ -9,10 +9,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # --- DEBUG: FORCE PRINT TO TERMINAL ---
-        #print(f"\n\n🚨 --- NEW REQUEST FROM: {user.username} ---")
-        #print(f"   Role: Is Superuser? {user.is_superuser}")
-        
+
         # 1. Admin / Superuser sees ALL
         if user.is_superuser:
             count = Appointment.objects.count()

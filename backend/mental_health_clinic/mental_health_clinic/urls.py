@@ -34,7 +34,7 @@ urlpatterns = [
 
     # --- App Endpoints ---
     path('api/users/', include('users.urls')),
-    path('api/appointments/', include('appointments.urls')), 
+    path('api/', include('appointments.urls')),
 
     # --- Documentation URLs ---
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
