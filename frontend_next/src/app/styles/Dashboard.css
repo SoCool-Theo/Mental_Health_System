@@ -5,7 +5,7 @@
   --border: #e8e8e8;
   --secondary: #eaf4f7;
   --muted-foreground: #949494;
-  --sidebar: #eaf4f7;
+  --sidebar: #f1f5f9;
   --sidebar-foreground: #113f4b;
   --sidebar-primary: #2c7da0;
   --sidebar-primary-foreground: #f7f7f7;
@@ -51,7 +51,10 @@
   cursor: pointer;
   transition: background 0.2s;
 }
-.sidebar-item:hover { background: rgba(255,255,255,0.5); }
+.sidebar-item:hover { 
+  background: rgba(236, 242, 242, 0.795);
+  color: var(--sidebar-primary); 
+}
 .sidebar-item-active { background: var(--sidebar-primary); color: var(--sidebar-primary-foreground); }
 
 /* MAIN CONTENT */
@@ -86,9 +89,24 @@
   padding: 8px 0; border-bottom: 1px solid #eee;
 }
 .time-col { color: var(--muted-foreground); font-size: 14px; padding-top: 6px; }
+
 .info-col { 
-  background: var(--secondary); padding: 10px; 
-  border-radius: 8px; 
+  background: var(--secondary); 
+  padding: 10px; 
+  border-radius: 8px;
+  transition: background 0.2s ease-in-out; 
 }
+/* --- ADD THIS TO CHANGE THE HOVER COLOR --- */
+.info-col:hover { 
+  background: #3499bb;
+  cursor: pointer;
+}
+
+/* Make text white on hover */
+.info-col:hover .patient-name,
+.info-col:hover .appt-type {
+  color: white;
+}
+
 .patient-name { font-weight: 600; font-size: 14px; }
 .appt-type { font-size: 12px; color: var(--muted-foreground); }

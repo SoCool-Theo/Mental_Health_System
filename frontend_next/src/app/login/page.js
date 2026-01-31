@@ -26,7 +26,7 @@ export default function LoginPage() {
       localStorage.setItem('refresh_token', response.data.refresh);
 
       // 3. Redirect to Dashboard
-      router.push('/dashboard');
+      router.push('/doctor/dashboard');
 
     } catch (err) {
       console.error(err);
