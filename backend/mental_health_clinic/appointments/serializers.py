@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import Service, Appointment
 from users.serializers import PatientProfileSerializer, TherapistProfileSerializer
+from users.models import PatientProfile
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -22,3 +23,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'therapist_details', 'patient_details', 'service_details'
         ]
         read_only_fields = ['end_time', 'created_at']
+
+class PatientSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    full_name = serializers.CharField(source='user.get_full_name', read_only=True)
+
+    class Meta:
+        model = PatientProfile
+        fields = ['id', 'user_name', 'full_name', 'date_of_birth', 'medical_history', 'emergency_contact']

@@ -2,6 +2,8 @@ from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import Service, Appointment
 from .serializers import ServiceSerializer, AppointmentSerializer
+from users.models import PatientProfile
+from .serializers import PatientSerializer
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -33,3 +35,23 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+
+class PatientViewSet(viewsets.ModelViewSet):
+    serializer_class = PatientSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # 1. Therapist: See patients linked to my appointments
+        if hasattr(user, 'therapist_profile'):
+            # "Find patients who have an appointment with Me"
+            return PatientProfile.objects.filter(
+                appointments__therapist=user.therapist_profile
+            ).distinct()
+
+        # 2. Admin: See everyone
+        if user.is_superuser:
+            return PatientProfile.objects.all()
+
+        return PatientProfile.objects.none()
