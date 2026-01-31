@@ -4,6 +4,8 @@ from .models import Service, Appointment
 from .serializers import ServiceSerializer, AppointmentSerializer
 from users.models import PatientProfile
 from .serializers import PatientSerializer
+from .models import ClinicalNote
+from .serializers import ClinicalNoteSerializer
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -55,3 +57,18 @@ class PatientViewSet(viewsets.ModelViewSet):
             return PatientProfile.objects.all()
 
         return PatientProfile.objects.none()
+
+class ClinicalNoteViewSet(viewsets.ModelViewSet):
+    serializer_class = ClinicalNoteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        # Only show notes written by this therapist
+        if hasattr(user, 'therapist_profile'):
+            return ClinicalNote.objects.filter(therapist=user.therapist_profile).order_by('-created_at')
+        return ClinicalNote.objects.none()
+
+    def perform_create(self, serializer):
+        # Auto-assign the therapist when saving
+        serializer.save(therapist=self.request.user.therapist_profile)

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Service, Appointment
 from users.serializers import PatientProfileSerializer, TherapistProfileSerializer
 from users.models import PatientProfile
+from .models import ClinicalNote
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,3 +32,9 @@ class PatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientProfile
         fields = ['id', 'user_name', 'full_name', 'date_of_birth', 'medical_history', 'emergency_contact']
+
+class ClinicalNoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClinicalNote
+        fields = '__all__'
+        read_only_fields = ['therapist', 'created_at'] # These are auto-filled

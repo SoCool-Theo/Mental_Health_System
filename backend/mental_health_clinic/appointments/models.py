@@ -45,3 +45,18 @@ class Appointment(models.Model):
 
     def __str__(self):
         return f"{self.patient} with {self.therapist} on {self.start_time.strftime('%Y-%m-%d %H:%M')}"
+
+
+class ClinicalNote(models.Model):
+    patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='notes')
+    therapist = models.ForeignKey(TherapistProfile, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Fields from the design
+    diagnosis_code = models.CharField(max_length=50, blank=True, null=True)
+    subjective_analysis = models.TextField(help_text="Patient reports, mood, etc.")
+    treatment_plan = models.TextField(help_text="Interventions & homework")
+    is_draft = models.BooleanField(default=False, help_text="True if note is still in progress")
+
+    def __str__(self):
+        return f"Note for {self.patient} on {self.created_at.strftime('%Y-%m-%d')}"
