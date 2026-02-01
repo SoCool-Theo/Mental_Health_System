@@ -27,6 +27,7 @@ class CurrentUserView(APIView):
             full_name = user.username
 
         # 2. Add "Dr." prefix if they are a therapist
+        # (Make sure 'therapist_profile' matches your related_name in models.py)
         if hasattr(user, 'therapist_profile'):
             display_name = f"Dr. {full_name}"
         else:
@@ -35,6 +36,13 @@ class CurrentUserView(APIView):
         return Response({
             'id': user.id,
             'username': user.username,
+            'email': user.email,
             'display_name': display_name,
+
+            # --- IMPORTANT: ADD THESE LINES ---
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            # ----------------------------------
+
             'is_therapist': hasattr(user, 'therapist_profile')
         })
