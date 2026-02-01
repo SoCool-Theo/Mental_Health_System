@@ -1,36 +1,54 @@
-'use client'; // <--- Required for Next.js to use 'useState'
+'use client'; 
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'; // Next.js version of useNavigat
+import { useRouter } from 'next/navigation'; 
 import api from '../../api';        
-import '../styles/Login.css'; // Add css desgin
+import '../styles/Login.css'; // Importing your CSS file
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  
+  // State for the error message
+  const [errorMessage, setErrorMessage] = useState('');
+  
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setErrorMessage(''); // Clear previous errors on new attempt
 
     try {
-      // 1. Send Credentials to Django
-      const response = await api.post('token/', { username, password });
+      const res = await api.post('token/', { username, password });
       
-      // 2. Save Tokens (In LocalStorage for now)
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+      localStorage.setItem('access_token', res.data.access);
+      localStorage.setItem('refresh_token', res.data.refresh);
 
-      // 3. Redirect to Dashboard
-      router.push('/doctor/dashboard');
+      // Check User Role
+      const userRes = await api.get('users/me/', {
+        headers: { Authorization: `Bearer ${res.data.access}` }
+      });
 
-    } catch (err) {
-      console.error(err);
-      setError('Invalid Username or Password');
+      const user = userRes.data;
+
+      if (user.is_staff || user.is_superuser) {
+          router.push('/doctor/dashboard');
+      } else {
+          router.push('/patient/dashboard');
+      }
+
+    } catch (error) {
+      console.error("Login Error:", error);
+
+      // Catch the 401 Error (Wrong Password/Username)
+      if (error.response && error.response.status === 401) {
+        setErrorMessage("Wrong username or password. Please try again.");
+      } else {
+        setErrorMessage("Something went wrong. Please check your connection.");
+      }
+      
     } finally {
       setLoading(false);
     }
@@ -42,6 +60,15 @@ export default function LoginPage() {
       
       <div className="login-card">
         <form onSubmit={handleLogin}>
+            
+          {/* --- FIX: Display Error Message Here --- */}
+          {errorMessage && (
+            <div className="error-msg">
+                {errorMessage}
+            </div>
+          )}
+          {/* --------------------------------------- */}
+
           <div className="form-group">
             <label className="form-label">Username</label>
             <input 
@@ -65,8 +92,6 @@ export default function LoginPage() {
               required
             />
           </div>
-
-          {error && <p className="error-msg">{error}</p>}
 
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Signing in...' : 'Sign In'}

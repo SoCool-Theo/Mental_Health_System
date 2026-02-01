@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
-import styles from './styles/Homepage.module.css'; // <--- FIXED IMPORT PATH
+// Import styles from the file beside layout.js (one level up)
+import styles from '../patient_dashboard.module.css'; 
 
-export default function HomePage() {
+export default function PatientDashboard() {
   return (
     <div style={{ fontFamily: 'Times New Roman, serif' }}> 
       
@@ -28,40 +28,17 @@ export default function HomePage() {
             zIndex: 1
         }}></div>
 
-        {/* CONTENT (Your Original Layout) */}
+        {/* CONTENT */}
         <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-            <header style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '25px 60px', borderBottom: '1px solid rgba(255,255,255,0.2)'
-            }}>
-                <div style={{ fontSize: '40px', letterSpacing: '2px' }}>LYFE</div>
-                
-                <nav style={{ display: 'flex', gap: '30px'}}>
-                    {/* Define your links and paths here */}
-                    {[
-                        { name: 'Home', path: '/' },
-                        { name: 'Sign In/ Register', path: '/login' }, // <--- THIS IS THE LINK YOU WANTED
-                        { name: 'Booking', path: '/booking' },
-                        { name: 'Messages', path: '/messages' },
-                        { name: 'Contact Us', path: '/contact' },
-                        { name: 'About Us', path: '/about' }
-                    ].map((item) => (
-                        <Link 
-                            key={item.name} 
-                            href={item.path} 
-                            className={styles.navLink}
-                        >
-                            {item.name}
-                        </Link>
-                    ))}
-                </nav>
-            </header>
+            {/* HEADER REMOVED (Handled by layout.js) */}
 
             <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                flex: 1, display: 'flex', flexDirection: 'column',
+                justifyContent: 'flex-center',
+                paddingTop: '35vh',
                 alignItems: 'flex-start', textAlign: 'left',
-                paddingLeft: '50%', // Your original offset
+                paddingLeft: '50%', // Keeps your original layout alignment
                 paddingRight: '10%'
             }}>
                 <h3 style={{ fontSize: '14px', fontFamily: 'sans-serif', letterSpacing: '1px', opacity: 0.9, marginBottom: '15px' }}>
@@ -70,6 +47,8 @@ export default function HomePage() {
                 <h1 style={{ fontSize: '56px', fontWeight: '400', marginBottom: '40px', lineHeight: '1.2' }}>
                     Your Path to<br />Mental Health Wellness<br />Starts Here
                 </h1>
+                
+                {/* BUTTON WITH HOVER EFFECT (Inline JS) */}
                 <button style={{
                     background: 'transparent', border: '1px solid white', color: 'white',
                     padding: '12px 35px', fontSize: '16px', fontFamily: 'sans-serif',
@@ -78,18 +57,16 @@ export default function HomePage() {
                 onMouseOver={(e) => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#585e54'; }}
                 onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'white'; }}
                 >
-                    Learn More
+                    Book Session
                 </button>
             </div>
         </div>
-        
-        
       </section>
 
 
       {/* ================= SERVICES SECTION ================= */}
       <section style={{
-        position: 'relative', // Added relative for overlay positioning
+        position: 'relative',
         padding: '150px 10%', 
         backgroundImage: "url('/services_bg_homepage.jpg')",
         backgroundSize: 'cover',
@@ -100,18 +77,15 @@ export default function HomePage() {
         gap: '40px'
       }}>
         
-        {/* ADDED: FULL SCREEN GLASS OVERLAY FOR SERVICES */}
         <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(30, 30, 30, 0.5)',      // Darker tint for readability
-            backdropFilter: 'blur(4px)',        // The Blur
+            background: 'rgba(30, 30, 30, 0.5)',
+            backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
             zIndex: 1
         }}></div>
 
-        {/* Content Wrapper (Needs zIndex to sit on top of blur) */}
         <div style={{ position: 'relative', zIndex: 2 }}>
-            
             <div>
                 <h2 style={{
                     fontSize: '50px', fontFamily: 'Times New Roman, serif', fontWeight: 'normal',
@@ -121,6 +95,7 @@ export default function HomePage() {
                 </h2>
             </div>
 
+            {/* SERVICE CARDS (Using CSS Module for Hover) */}
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -128,25 +103,21 @@ export default function HomePage() {
                 textAlign: 'center',
                 marginTop: '40px'
             }}>
-                {/* Service 1 */}
                 <div className={styles.serviceCard} style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                     <div style={{ width: '100%', height: '300px', backgroundImage: "url('/individual_therapy.jpg')", backgroundSize: 'cover', borderRadius: '8px' }}></div>
                     <p style={{ fontFamily: 'sans-serif', fontSize: '14px' }}>Individual Therapy</p>
                 </div>
 
-                {/* Service 2 */}
                 <div className={styles.serviceCard} style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                     <div style={{ width: '100%', height: '300px', backgroundImage: "url('/stress_anxiety.jpg')", backgroundSize: 'cover', borderRadius: '8px' }}></div>
                     <p style={{ fontFamily: 'sans-serif', fontSize: '14px' }}>Stress & Anxiety<br/>Management</p>
                 </div>
 
-                {/* Service 3 */}
                 <div className={styles.serviceCard} style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                     <div style={{ width: '100%', height: '300px', backgroundImage: "url('/depression_support.jpg')", backgroundSize: 'cover', borderRadius: '8px' }}></div>
                     <p style={{ fontFamily: 'sans-serif', fontSize: '14px' }}>Depression<br/>Support</p>
                 </div>
 
-                {/* Service 4 */}
                 <div className={styles.serviceCard} style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
                     <div style={{ width: '100%', height: '300px', backgroundImage: "url('/trauma.jpg')", backgroundSize: 'cover', borderRadius: '8px' }}></div>
                     <p style={{ fontFamily: 'sans-serif', fontSize: '14px' }}>Trauma-Informed<br/>Therapy</p>
@@ -171,18 +142,15 @@ export default function HomePage() {
         justifyContent: 'center'
       }}>
 
-        {/* FULL SCREEN GLASS OVERLAY */}
         <div style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(30, 30, 30, 0.5)', 
-            backdropFilter: 'blur(4px)',       // The Blur
+            backdropFilter: 'blur(4px)',
             WebkitBackdropFilter: 'blur(4px)',
             zIndex: 1
         }}></div>
 
-        {/* CONTENT (Your Original Layout) */}
         <div style={{ position: 'relative', zIndex: 2, maxWidth: '700px' }}>
-            
             <h2 style={{ fontSize: '48px', fontWeight: 'normal', lineHeight: '1.2', marginBottom: '20px' }}>
                 You don’t have to navigate<br/>life’s challenges alone.<br/>We’re here to help.
             </h2>
@@ -212,7 +180,6 @@ export default function HomePage() {
                  <span style={{cursor:'pointer'}}>📷</span>
                  <span style={{cursor:'pointer'}}>💬</span>
             </div>
-
         </div>
       </section>
 

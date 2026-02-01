@@ -1,0 +1,30 @@
+.serviceCard {
+  background-color: rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 2; /* Ensures cards sit on top of the blur */
+}
+
+.serviceCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+  border-color: rgba(255,255,255,0.6);
+}
+
+.navLink {
+  color: #e2e2e2;
+  text-decoration: none;
+  font-size: 16px;
+  font-family: sans-serif;
+  transition: color 0.3s ease, border-bottom 0.3s ease;
+  padding-bottom: 4px;
+  border-bottom: 2px solid transparent;
+}
+
+.navLink:hover {
+  color: #ffffff;
+  border-bottom: 2px solid #ffffff;
+}
