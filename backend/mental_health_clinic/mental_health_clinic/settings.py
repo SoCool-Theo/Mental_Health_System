@@ -22,7 +22,7 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -129,7 +129,8 @@ AUTH_USER_MODEL = 'users.User'
 
 #CORs Configuration
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # <--- NEW ONE
+    "http://localhost:3000",
+    "http://100.107.153.1:3000"
 ]
 
 # Django Rest Framework Configuration
