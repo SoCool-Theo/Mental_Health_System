@@ -28,3 +28,28 @@
   color: #ffffff;
   border-bottom: 2px solid #ffffff;
 }
+
+
+.glassCard {
+  /* Semi-transparent white background */
+  background: rgba(255, 255, 255, 0.15); 
+  
+  /* The Blur Effect (Frosted Glass) */
+  backdrop-filter: blur(12px);          
+  -webkit-backdrop-filter: blur(12px); /* Safari support */
+
+  /* Border & Shape */
+  border: 1px solid rgba(255, 255, 255, 0.2); 
+  border-radius: 16px;
+  padding: 25px;
+  
+  /* Text & Shadow */
+  color: white;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.glassCard:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.2); /* Slightly brighter on hover */
+}

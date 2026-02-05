@@ -3,13 +3,12 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation'; 
 import api from '../../api';        
-import '../styles/Login.css'; // Importing your CSS file
+import '../styles/Login.css'; 
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   
-  // State for the error message
   const [errorMessage, setErrorMessage] = useState('');
   
   const [loading, setLoading] = useState(false);
@@ -18,7 +17,7 @@ export default function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage(''); // Clear previous errors on new attempt
+    setErrorMessage(''); 
 
     try {
       const res = await api.post('token/', { username, password });
@@ -33,16 +32,26 @@ export default function LoginPage() {
 
       const user = userRes.data;
 
-      if (user.is_staff || user.is_superuser) {
+      // --- LOGIC UPDATED FOR 3 ROLES ---
+      // We prioritize the checks: Superuser -> Staff -> Patient
+      
+      if (user.is_superuser) {
+          // 1. Admin / Superuser
+          router.push('/admin/dashboard'); 
+
+      } else if (user.is_staff) {
+          // 2. Doctor / Staff
           router.push('/doctor/dashboard');
+
       } else {
-          router.push('/patient/dashboard');
+          // 3. Patient (Default)
+          router.push('/patient/homepage');
       }
+      // ---------------------------------
 
     } catch (error) {
       console.error("Login Error:", error);
 
-      // Catch the 401 Error (Wrong Password/Username)
       if (error.response && error.response.status === 401) {
         setErrorMessage("Wrong username or password. Please try again.");
       } else {
@@ -61,13 +70,11 @@ export default function LoginPage() {
       <div className="login-card">
         <form onSubmit={handleLogin}>
             
-          {/* --- FIX: Display Error Message Here --- */}
           {errorMessage && (
             <div className="error-msg">
                 {errorMessage}
             </div>
           )}
-          {/* --------------------------------------- */}
 
           <div className="form-group">
             <label className="form-label">Username</label>

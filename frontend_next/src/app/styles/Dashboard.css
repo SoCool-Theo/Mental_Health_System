@@ -1,15 +1,21 @@
 /* src/app/styles/Dashboard.css */
 :root {
+  /* --- CHANGED: Forest Green & White Theme --- */
   --background: #ffffff;
-  --foreground: #000000;
-  --border: #e8e8e8;
-  --secondary: #eaf4f7;
-  --muted-foreground: #949494;
-  --sidebar: #f1f5f9;
-  --sidebar-foreground: #113f4b;
-  --sidebar-primary: #2c7da0;
-  --sidebar-primary-foreground: #f7f7f7;
-  --card: #fbfaf9;
+  --foreground: #1c1c1c;       /* Darker text for better contrast */
+  --border: #4a6b5d;           /* Using the Green as the border color (like in the photo) */
+  
+  --secondary: #f0f4f1;        /* Very light sage for backgrounds */
+  --muted-foreground: #6e7e76; /* Greenish-gray for secondary text */
+  
+  --sidebar: #ffffff;          /* White sidebar */
+  --sidebar-foreground: #354f42; /* Dark Green text for links */
+  
+  /* THE MAIN BRAND COLOR (Forest Green from the photo) */
+  --sidebar-primary: #4a6b5d;  
+  --sidebar-primary-foreground: #ffffff; 
+  
+  --card: #ffffff;
   --radius-lg: 12px;
 }
 
@@ -20,7 +26,7 @@
   display: flex;
   flex-direction: column;
   padding: 24px 32px;
-  font-family: sans-serif;
+  font-family: sans-serif; /* 'LYFE' uses serif, but we keep your design sans-serif for UI */
 }
 
 .app-shell {
@@ -38,9 +44,10 @@
   padding: 16px 12px;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border); /* Added border to match the photo's outlined look */
 }
 
-.sidebar-header { font-weight: 600; padding: 4px 8px 12px; }
+.sidebar-header { font-weight: 600; padding: 4px 8px 12px; font-family: 'Times New Roman', serif; font-size: 24px; color: var(--sidebar-foreground); }
 .sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 
 .sidebar-item {
@@ -50,17 +57,26 @@
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s;
+  color: var(--sidebar-foreground);
 }
+
 .sidebar-item:hover { 
-  background: rgba(236, 242, 242, 0.795);
+  background: var(--secondary);
   color: var(--sidebar-primary); 
 }
-.sidebar-item-active { background: var(--sidebar-primary); color: var(--sidebar-primary-foreground); }
+
+/* Active state matches the "Configurations" button in the photo (White with Green border/text) */
+.sidebar-item-active { 
+  background: white; 
+  color: var(--sidebar-primary); 
+  border: 1px solid var(--sidebar-primary); 
+}
 
 /* MAIN CONTENT */
 .app-main { flex: 1; display: flex; flex-direction: column; }
 
 .header-bar { display: flex; justify-content: space-between; margin-bottom: 24px; }
+
 .logo-mark { 
   background: var(--sidebar-primary); color: white; 
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
@@ -76,9 +92,10 @@
   padding: 20px;
   flex: 1;
   display: flex; flex-direction: column; gap: 12px;
+  border: 1px solid var(--border); /* Green outline for cards */
 }
 .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-.card-title { font-weight: 600; font-size: 16px; }
+.card-title { font-weight: 600; font-size: 16px; color: var(--sidebar-foreground); }
 
 /* GRID */
 .schedule-pane { flex: 0.7; }
@@ -91,14 +108,15 @@
 .time-col { color: var(--muted-foreground); font-size: 14px; padding-top: 6px; }
 
 .info-col { 
-  background: var(--secondary); 
+  background: var(--secondary); /* Light Sage */
   padding: 10px; 
   border-radius: 8px;
   transition: background 0.2s ease-in-out; 
 }
-/* --- ADD THIS TO CHANGE THE HOVER COLOR --- */
+
+/* --- CHANGED: Hover color is now Green instead of Blue --- */
 .info-col:hover { 
-  background: #3499bb;
+  background: var(--sidebar-primary); /* Forest Green */
   cursor: pointer;
 }
 
