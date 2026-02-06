@@ -8,10 +8,7 @@ import styles from './patient_dashboard.module.css';
 
 export default function PatientLayout({ children }) {
   const [user, setUser] = useState(null);
-  
-  // 1. New State for Dropdown Visibility
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
   const router = useRouter();
 
   // Fetch User Data
@@ -53,11 +50,16 @@ export default function PatientLayout({ children }) {
           padding: '25px 60px', 
           borderBottom: '1px solid rgba(255,255,255,0.2)'
       }}>
-          <div style={{ fontSize: '40px', letterSpacing: '2px', color: 'white' }}>LYFE</div>
+          
+          {/* --- CLICKABLE LOGO --- */}
+          <Link href="/patient/homepage" style={{ textDecoration: 'none' }}>
+              <div style={{ fontSize: '40px', letterSpacing: '2px', color: 'white', cursor: 'pointer' }}>
+                  LYFE
+              </div>
+          </Link>
           
           <nav style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-                {/* --- 1. NAV LINKS --- */}
-            
+               
               <Link href="/patient/homepage" className={styles.navLink}>
                   Home
               </Link>
@@ -78,10 +80,10 @@ export default function PatientLayout({ children }) {
               Contact Us
               </Link>
               
-              {/* --- 2. PROFILE PICTURE & DROPDOWN AREA --- */}
+              {/* --- PROFILE PICTURE & DROPDOWN AREA --- */}
               <div style={{ position: 'relative' }}>
                   
-                  {/* THE TRIGGER: Small Profile Circle */}
+                  {/* THE TRIGGER */}
                   <div 
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                       style={{ 
@@ -93,7 +95,6 @@ export default function PatientLayout({ children }) {
                       onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                   >
-                       {/* Use user's image or a generic placeholder */}
                       <img 
                           src={user?.profile_image || "https://i.pravatar.cc/150?img=12"} 
                           alt="Profile" 
@@ -101,12 +102,12 @@ export default function PatientLayout({ children }) {
                       />
                   </div>
 
-                  {/* THE DROPDOWN MENU (Styled like your photo) */}
+                  {/* THE DROPDOWN MENU */}
                   {isDropdownOpen && (
                       <div style={{
                           position: 'absolute', top: '60px', right: '-10px', 
                           width: '300px', 
-                          backgroundColor: '#e4e4e4', // Light gray background from photo
+                          backgroundColor: '#e4e4e4', 
                           borderRadius: '20px', 
                           padding: '30px 20px',
                           boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
@@ -115,19 +116,17 @@ export default function PatientLayout({ children }) {
                           zIndex: 100
                       }}>
                           
-                          {/* Large Profile Image */}
                           <div style={{ 
                               width: '80px', height: '80px', borderRadius: '50%', 
                               overflow: 'hidden', marginBottom: '15px', border: '2px solid white' 
                           }}>
                               <img 
-                                src={user?.profile_image || "https://i.pravatar.cc/150?img=12"} 
-                                alt="Profile" 
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  src={user?.profile_image || "https://i.pravatar.cc/150?img=12"} 
+                                  alt="Profile" 
+                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />
                           </div>
 
-                          {/* Name & Email */}
                           <h3 style={{ margin: '0', fontFamily: 'Times New Roman, serif', fontSize: '22px', fontWeight: 'bold' }}>
                               {user ? `${user.first_name} ${user.last_name}` : 'Loading...'}
                           </h3>
@@ -135,20 +134,26 @@ export default function PatientLayout({ children }) {
                               {user?.email || 'loading@email.com'}
                           </p>
 
-                          {/* Menu Items (Dividers) */}
                           <div style={{ width: '100%', textAlign: 'left', fontFamily: 'Times New Roman, serif', fontSize: '18px' }}>
-                              {/* --- CHANGED: Edit Profile Link --- */}
                               <Link href="/patient/profile" style={{ textDecoration: 'none', color: 'inherit' }}>
                                   <div style={{ padding: '12px 0', borderTop: '1px solid #ccc', cursor: 'pointer' }}>
                                       Edit Profile
                                   </div>
                               </Link>
-                              {/* ---------------------------------- */}
-                              <div style={{ padding: '12px 0', borderTop: '1px solid #ccc', cursor: 'pointer' }}>Account Settings</div>
-                              <div style={{ padding: '12px 0', borderTop: '1px solid #ccc', borderBottom: '1px solid #ccc', cursor: 'pointer', marginBottom: '25px' }}>Change Password</div>
+                              
+                              <Link href="/patient/account-settings" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                  <div style={{ padding: '12px 0', borderTop: '1px solid #ccc', cursor: 'pointer' }}>
+                                      Account Settings
+                                  </div>
+                              </Link>
+                              
+                              <Link href="/patient/change-password" style={{ textDecoration: 'none', color: 'inherit' }}>
+                                    <div style={{ padding: '12px 0', borderTop: '1px solid #ccc', borderBottom: '1px solid #ccc', cursor: 'pointer', marginBottom: '25px' }}>
+                                        Change Password
+                                    </div>
+                                </Link>
                           </div>
 
-                          {/* Sign Out Button with Hover Effect */}
                           <button 
                               onClick={handleLogout} 
                               style={{
@@ -162,10 +167,9 @@ export default function PatientLayout({ children }) {
                                   display: 'flex', 
                                   alignItems: 'center', 
                                   gap: '8px',
-                                  transition: 'all 0.3s ease', // Smooth transition
-                                  color: '#333' // Default color
+                                  transition: 'all 0.3s ease', 
+                                  color: '#333' 
                               }}
-                              // --- HOVER EFFECTS ---
                               onMouseOver={(e) => {
                                   e.currentTarget.style.background = '#333';
                                   e.currentTarget.style.color = 'white';
@@ -181,15 +185,12 @@ export default function PatientLayout({ children }) {
                       </div>
                   )}
               </div>
-              {/* ------------------------------------------- */}
-
           </nav>
       </header>
 
       {/* --- PAGE CONTENT --- */}
       <div onClick={() => setIsDropdownOpen(false)}> 
-         {/* Clicking anywhere else closes the dropdown */}
-         {children}
+          {children}
       </div>
 
     </div>

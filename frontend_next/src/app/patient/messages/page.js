@@ -6,6 +6,14 @@ export default function MessagesPage() {
   const [privacyMode, setPrivacyMode] = useState(false);
   const [messageInput, setMessageInput] = useState('');
 
+  // --- PRIVACY BLUR STYLE ---
+  const sensitiveStyle = {
+    filter: privacyMode ? 'blur(4px)' : 'none', 
+    transition: 'all 0.3s ease',
+    userSelect: privacyMode ? 'none' : 'text', 
+    opacity: privacyMode ? 0.6 : 1 
+  };
+
   // --- DUMMY DATA ---
   const contacts = [
     { id: 1, name: 'Dr. Alex Rivera', lastMsg: "Okay, I see. Let's explore that further...", time: '10:30 AM', unread: 0, active: true, img: '5' },
@@ -23,11 +31,9 @@ export default function MessagesPage() {
     { id: 5, sender: 'them', text: "That is completely normal. We can practice it together.", time: '10:36 AM' },
     { id: 6, sender: 'them', text: "Also, please bring your journal logs if you have them.", time: '10:36 AM' },
   ];
-  // ------------------
 
 
   return (
-    // CHANGED: Removed overflow:hidden and changed height to minHeight so page can scroll
     <div style={{ fontFamily: 'Times New Roman, serif', minHeight: '100vh', backgroundColor: '#333' }}>
       
       {/* ================= FIXED BACKGROUND ================= */}
@@ -38,9 +44,9 @@ export default function MessagesPage() {
       {/* ================= MAIN CONTENT CONTAINER ================= */}
       <div style={{ 
           position: 'relative', zIndex: 1, 
-          minHeight: '100vh',      // Ensure it covers full screen at minimum
-          paddingTop: '120px',     // Top Nav Space
-          paddingBottom: '50px',   // Bottom breathing room
+          minHeight: '100vh',      
+          paddingTop: '120px',    
+          paddingBottom: '50px',   
           paddingLeft: '5%', paddingRight: '5%',
           display: 'flex', flexDirection: 'column',
           color: 'white'
@@ -52,7 +58,9 @@ export default function MessagesPage() {
 
             {/* Privacy Toggle */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.2)', padding: '8px 15px', borderRadius: '30px', backdropFilter: 'blur(10px)' }}>
-                <span style={{ fontSize: '14px', fontFamily: 'sans-serif', fontWeight: 'bold' }}>Privacy Mode</span>
+                <span style={{ fontSize: '14px', fontFamily: 'sans-serif', fontWeight: 'bold' }}>
+                    {privacyMode ? 'Privacy On' : 'Privacy Mode'}
+                </span>
                 <div onClick={() => setPrivacyMode(!privacyMode)} style={{ width: '40px', height: '20px', background: privacyMode ? '#4ade80' : '#ccc', borderRadius: '20px', position: 'relative', cursor: 'pointer', transition: 'background 0.3s' }}>
                     <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '50%', position: 'absolute', top: '2px', left: privacyMode ? '22px' : '2px', transition: 'left 0.3s' }}></div>
                 </div>
@@ -62,14 +70,12 @@ export default function MessagesPage() {
 
         {/* --- THE MAIN GLASS INTERFACE BOX --- */}
         <div style={{
-            // CHANGED: Fixed tall height (85% of viewport) + Minimum height to stretch it out
             height: '85vh', 
-            minHeight: '800px', // Guarantees it stays tall even on small screens
-            
+            minHeight: '800px', 
             background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)',
             borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.2)',
             display: 'grid', gridTemplateColumns: '350px 1fr', 
-            overflow: 'hidden', // Keeps internal scrollbars inside the box
+            overflow: 'hidden', 
             boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
         }}>
 
@@ -102,7 +108,12 @@ export default function MessagesPage() {
                                     <span style={{ fontSize: '12px', opacity: 0.7 }}>{contact.time}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <p style={{ margin: 0, fontSize: '13px', opacity: 0.7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{contact.lastMsg}</p>
+                                    
+                                    {/* BLURRED PREVIEW */}
+                                    <p style={{ margin: 0, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...sensitiveStyle }}>
+                                        {contact.lastMsg}
+                                    </p>
+
                                     {contact.unread > 0 && (
                                         <span style={{ background: '#ff5555', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', marginLeft: '10px' }}>{contact.unread}</span>
                                     )}
@@ -140,7 +151,10 @@ export default function MessagesPage() {
                                 borderTopRightRadius: msg.sender === 'me' ? '5px' : '20px',
                                 borderTopLeftRadius: msg.sender === 'them' ? '5px' : '20px'
                             }}>
-                                <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.5' }}>{msg.text}</p>
+                                {/* BLURRED MESSAGE CONTENT */}
+                                <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.5', ...sensitiveStyle }}>
+                                    {msg.text}
+                                </p>
                             </div>
                              <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 {msg.time}

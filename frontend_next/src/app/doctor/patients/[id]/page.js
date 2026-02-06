@@ -145,7 +145,7 @@ export default function PatientProfile({ params }) {
                 
                 {/* BLUE BACKGROUND CONTAINER */}
                 <div style={{
-                    background: '#f1f5f9', // Light blue background
+                    background: '#f1f9f4', // Light green background
                     borderRadius: '8px',
                     padding: '15px',
                     flex: 1,
@@ -162,9 +162,9 @@ export default function PatientProfile({ params }) {
                                     padding:'15px', 
                                     background: editingNoteId === note.id ? '#ffffff' : '#ffffff',
                                     borderRadius:'8px', 
-                                    borderLeft: note.is_draft ? '4px solid #cbd5e1' : '4px solid #2c7da0',
+                                    borderLeft: note.is_draft ? '4px solid #cbd5e1' : '4px solid #4a6b5d',
                                     cursor: note.is_draft ? 'pointer' : 'default',
-                                    border: editingNoteId === note.id ? '2px solid #2c7da0' : 'none',
+                                    border: editingNoteId === note.id ? '2px solid #4a6b5d' : 'none',
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
                                 }}
                             >
@@ -379,7 +379,7 @@ export default function PatientProfile({ params }) {
                             onClick={() => handleSave(false)} 
                             disabled={saving}
                             style={{
-                                background: '#0e7490', 
+                                background: ' #4a6b5d', 
                                 color: 'white', 
                                 border: 'none', 
                                 padding: '10px 20px', 
@@ -393,8 +393,8 @@ export default function PatientProfile({ params }) {
                                 opacity: saving ? 0.7 : 1,
                                 boxShadow: '0 2px 4px rgba(14, 116, 144, 0.2)'
                             }}
-                            onMouseOver={(e) => e.currentTarget.style.background = '#155e75'}
-                            onMouseOut={(e) => e.currentTarget.style.background = '#0e7490'}
+                            onMouseOver={(e) => e.currentTarget.style.background = '#354f42'}
+                            onMouseOut={(e) => e.currentTarget.style.background = '#4a6b5d'}
                         >
                             <iconify-icon icon="lucide:lock" style={{fontSize:'16px'}}></iconify-icon>
                             <span>{saving ? 'Signing...' : 'Sign & Lock Record'}</span>

@@ -8,8 +8,6 @@ import '../styles/Dashboard.css';
 
 export default function DoctorLayout({ children }) {
   const [doctorName, setDoctorName] = useState('Loading...');
-  
-  // 1. NEW: Add State for Avatar (with a default fallback image)
   const [doctorAvatar, setDoctorAvatar] = useState('/medical-profile-default.png');
   
   const router = useRouter();
@@ -25,11 +23,7 @@ export default function DoctorLayout({ children }) {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            // Set Name
             setDoctorName(response.data.display_name);
-
-            // 2. NEW: Set Avatar (Check if backend sent one, otherwise keep default)
-            // Note: Ensure your backend sends a field like 'profile_image' or 'avatar'
             if (response.data.profile_image) {
                 setDoctorAvatar(response.data.profile_image);
             }
@@ -54,12 +48,25 @@ export default function DoctorLayout({ children }) {
         <div className="sidebar">
           <div className="sidebar-header">Main Navigation</div>
           <div className="sidebar-nav">
+            
             <Link href="/doctor/dashboard" style={{textDecoration: 'none'}}>
-                <div className={`sidebar-item ${pathname.includes('dashboard') ? 'sidebar-item-active' : ''}`}>
+                <div className={`sidebar-item ${pathname === '/doctor/dashboard' ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:calendar-days" style={{fontSize: '18px'}}></iconify-icon>
                     <span>Schedule</span>
                 </div>
             </Link>
+
+            <Link href="/doctor/message" style={{textDecoration: 'none'}}>
+                <div className={`sidebar-item ${pathname.includes('message') ? 'sidebar-item-active' : ''}`}>
+                    <iconify-icon icon="lucide:message-square" style={{fontSize: '18px'}}></iconify-icon>
+                    <span>Messages</span>
+                    <span style={{ 
+                        marginLeft: 'auto', background: '#ef4444', color: 'white', 
+                        fontSize: '10px', padding: '2px 6px', borderRadius: '10px' 
+                    }}>5</span>
+                </div>
+            </Link>
+
             <Link href="/doctor/patients" style={{textDecoration: 'none'}}>
                 <div className={`sidebar-item ${pathname.includes('patients') ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:users" style={{fontSize: '18px'}}></iconify-icon>
@@ -67,6 +74,7 @@ export default function DoctorLayout({ children }) {
                 </div>
             </Link>
           </div>
+
           <div style={{marginTop: 'auto', paddingTop: '20px', borderTop: '1px solid #ccc'}}>
             <div className="sidebar-item" onClick={handleLogout} style={{color: 'red'}}>
               <iconify-icon icon="lucide:log-out" style={{fontSize: '18px'}}></iconify-icon>
@@ -87,12 +95,10 @@ export default function DoctorLayout({ children }) {
                 
                 {/* PROFILE SECTION */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    
-                    {/* 3. NEW: Use the Dynamic Variable Here */}
                     <img 
                         src={doctorAvatar} 
                         alt="Profile"
-                        onError={(e) => { e.target.src = '/medical-profile-default.png'; }} // Safety net if URL breaks
+                        onError={(e) => { e.target.src = '/medical-profile-default.png'; }} 
                         style={{
                             width: '42px', height: '42px', borderRadius: '50%',
                             objectFit: 'cover', border: '2px solid #fff',
@@ -109,14 +115,21 @@ export default function DoctorLayout({ children }) {
                         </span>
                     </div>
 
-                    <div style={{ marginLeft: '12px', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                        <iconify-icon icon="lucide:settings" style={{fontSize: '20px'}}></iconify-icon>
-                    </div>
+                    {/* --- SETTINGS ICON (LINKED) --- */}
+                    <Link href="/doctor/settings" style={{ textDecoration: 'none', display: 'flex' }}>
+                        <div style={{ marginLeft: '12px', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
+                             onMouseOver={(e) => e.currentTarget.style.color = '#334155'}
+                             onMouseOut={(e) => e.currentTarget.style.color = '#94a3b8'}
+                        >
+                            <iconify-icon icon="lucide:settings" style={{fontSize: '20px'}}></iconify-icon>
+                        </div>
+                    </Link>
+                    {/* ----------------------------- */}
 
                 </div>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', backgroundColor: '#f8fafc' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '0', backgroundColor: '#f8fafc' }}>
                 {children}
             </div>
 

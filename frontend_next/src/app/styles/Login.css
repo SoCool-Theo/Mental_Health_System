@@ -1,82 +1,143 @@
-/* src/app/Login.css */
+/* src/app/styles/Login.css */
+
 .login-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #ffffff;
   font-family: sans-serif;
-  color: #000;
+  position: relative;
+  z-index: 1; 
+}
+
+/* Wrapper for the content */
+.login-content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lyfe-title-group {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white; /* Already white */
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
 }
 
 .lyfe-title {
-  font-size: 64px;
-  font-weight: bold;
-  letter-spacing: 4px;
-  margin-bottom: 40px;
-  font-family: serif; /* Matches your image */
+  font-size: 80px;
+  font-weight: normal;
+  letter-spacing: 2px;
+  margin: 0;
+  font-family: 'Times New Roman', serif;
 }
 
+.lyfe-subtitle {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  margin-top: 5px;
+  font-family: serif;
+  opacity: 0.9;
+}
+
+/* --- GLASS CARD --- */
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   padding: 40px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  
+  /* Glassmorphism */
+  background: rgba(255, 255, 255, 0.15); /* Slightly more transparent */
+  backdrop-filter: blur(12px);         
+  -webkit-backdrop-filter: blur(12px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  
+  /* --- CHANGED: Card Text Color --- */
+  color: #ffffff; 
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
+.form-group { margin-bottom: 20px; }
 
 .form-label {
   display: block;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   margin-bottom: 8px;
-  color: #374151;
+  
+  /* --- CHANGED: Label Color --- */
+  color: #ffffff; 
+  text-shadow: 0 1px 2px rgba(0,0,0,0.1); /* Subtle shadow for readability */
 }
 
 .form-input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #d1d5db;
+  padding: 12px 15px;
+  border: none;
   border-radius: 6px;
   outline: none;
-  transition: border-color 0.2s;
+  font-size: 14px;
+  
+  /* Inputs remain light with dark text for readability */
+  background-color: rgba(255, 255, 255, 0.9); 
+  color: #333; 
 }
-
+.form-input::placeholder { color: #888; }
 .form-input:focus {
-  border-color: #000;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
 }
 
 .btn-primary {
   width: 100%;
-  background-color: #1f2937; /* Dark Gray/Black */
+  background-color: #333; /* Dark button */
   color: white;
   padding: 12px;
   border-radius: 6px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.2);
   transition: background-color 0.2s;
+  margin-top: 10px;
+}
+.btn-primary:hover { 
+  background-color: #000; 
+  border-color: rgba(255,255,255,0.4);
 }
 
-.btn-primary:hover {
-  background-color: #000;
+.auth-links {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
 }
 
-/* --- ERROR MESSAGE STYLE --- */
+.auth-link {
+  /* --- CHANGED: Link Color --- */
+  color: #f0f0f0; /* Soft White */
+  text-decoration: underline;
+  cursor: pointer;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.auth-link:hover { 
+  color: #ffffff; /* Pure White on Hover */
+}
+
 .error-msg {
-  background-color: #ffebee;
-  color: #d32f2f;
+  background-color: rgba(220, 38, 38, 0.8); /* Red semi-transparent */
+  color: white;
   padding: 12px;
   border-radius: 6px;
   font-size: 14px;
   margin-bottom: 20px;
-  border: 1px solid #ffcdd2;
   text-align: center;
+  border: 1px solid rgba(255,255,255,0.2);
 }

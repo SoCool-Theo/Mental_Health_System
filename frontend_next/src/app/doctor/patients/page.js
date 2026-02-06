@@ -127,7 +127,7 @@ export default function PatientsPage() {
                                     <td style={{padding: '20px 24px', textAlign: 'right'}}>
                                         <Link href={`/doctor/patients/${p.id}`}>
                                             <button style={{
-                                                background: '#0e7490', // A nice teal/blue
+                                                background: '#4a6b5d', 
                                                 color: 'white', 
                                                 border: 'none', 
                                                 padding: '8px 16px', 
@@ -137,8 +137,8 @@ export default function PatientsPage() {
                                                 fontWeight: '600',
                                                 transition: 'background 0.2s'
                                             }}
-                                            onMouseOver={(e) => e.target.style.background = '#155e75'}
-                                            onMouseOut={(e) => e.target.style.background = '#0e7490'}
+                                            onMouseOver={(e) => e.target.style.background = '#354f42'}
+                                            onMouseOut={(e) => e.target.style.background = '#4a6b4f'}
                                             >
                                                 View Notes
                                             </button>

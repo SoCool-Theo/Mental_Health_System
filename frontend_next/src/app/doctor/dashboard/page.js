@@ -1,78 +1,103 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import api from '../../../api'; // Correct path from src/app/doctor/dashboard/
+// import api from '../../../api'; // Commented out for now
 
 export default function Dashboard() {
-  const [appointments, setAppointments] = useState([]);
-  const [patients, setPatients] = useState([]);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // --- STATIC EXAMPLE DATA (No API) ---
+  const [appointments] = useState([
+    {
+      id: 1,
+      start_time: "2026-02-06T09:00:00", // ISO format like the backend sends
+      patient_details: { full_name: "Sarah Jenkins" },
+      service_details: { name: "Initial Consultation" }
+    },
+    {
+      id: 2,
+      start_time: "2026-02-06T10:30:00",
+      patient_details: { full_name: "Michael Chen" },
+      service_details: { name: "CBT Therapy" }
+    },
+    {
+      id: 3,
+      start_time: "2026-02-06T14:00:00",
+      patient_details: { full_name: "Emma Wilson" },
+      service_details: { name: "Follow-up Session" }
+    }
+  ]);
+
+  const [patients] = useState([
+    { id: 101, full_name: "Sarah Jenkins" },
+    { id: 102, full_name: "Michael Chen" },
+    { id: 103, full_name: "Emma Wilson" },
+    { id: 104, full_name: "David Kim" },
+    { id: 105, full_name: "Lisa Wong" }
+  ]);
+  // -------------------------------------
+
+  /* // --- OLD API CODE (Keep this for later) ---
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('access_token');
-        if (!token) { router.push('/login'); return; }
-
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-
-        // 1. Fetch Appointments
-        const apptResponse = await api.get('appointments/', config);
-        if (Array.isArray(apptResponse.data)) setAppointments(apptResponse.data);
-        else if (apptResponse.data.results) setAppointments(apptResponse.data.results);
-
-        // 2. Fetch Patients (The Caseload)
-        const patientResponse = await api.get('patients/', config);
-        if (Array.isArray(patientResponse.data)) setPatients(patientResponse.data);
-        else if (patientResponse.data.results) setPatients(patientResponse.data.results);
-
-      } catch (err) {
-        console.error("Failed to load data:", err);
-      } finally {
-        setLoading(false);
-      }
+       // ... your fetch logic here ...
     };
-
     fetchData();
   }, [router]);
+  */
+
+  // Safe formatting helper
+  const formatTime = (isoString) => {
+    if (!isoString) return "09:00";
+    try {
+        return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return "--:--";
+    }
+  };
+
+  // Safe name helper
+  const getPatientName = (appt) => {
+      if (appt.patient_details?.full_name) return appt.patient_details.full_name;
+      if (appt.patient_details?.user?.username) return appt.patient_details.user.username;
+      return "Unknown Patient";
+  };
 
   return (
-    <div className="main-layout">
+    <div className="main-layout" style={{ gap: '20px' }}>
       
       {/* LEFT: SCHEDULE */}
       <div className="schedule-pane">
         <div className="card">
           <div className="card-header">
             <span className="card-title">Daily Schedule</span>
-            <span style={{ fontSize: '12px', color: '#888' }}>Today</span>
+            <span style={{ fontSize: '12px', color: '#888' }}>All Upcoming</span>
           </div>
 
           <div className="schedule-grid">
-            {loading && <p>Loading appointments...</p>}
-
-            {!loading && appointments.length === 0 && (
-              <p style={{ color: '#999', fontStyle: 'italic', padding: '10px' }}>
-                No appointments found for today.
-              </p>
+            {appointments.length === 0 && (
+              <p style={{ padding: '20px', color: '#999' }}>No appointments found.</p>
             )}
 
             {appointments.map((appt) => (
               <div className="schedule-row" key={appt.id}>
+                
+                {/* Time */}
                 <div className="time-col">
-                  {appt.start_time 
-                    ? new Date(appt.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-                    : "09:00"}
+                  {formatTime(appt.start_time)}
                 </div>
+                
+                {/* Info */}
                 <div className="info-col">
                   <div className="patient-name">
-                    {appt.patient_details?.user?.username || appt.patient || "Patient"}
+                    {getPatientName(appt)}
                   </div>
                   <div className="appt-type">
-                    {appt.service_details?.name || "General Session"}
+                    {appt.service_details?.name || "Session"}
                   </div>
                 </div>
+
               </div>
             ))}
           </div>
@@ -83,70 +108,34 @@ export default function Dashboard() {
       <div className="caseload-pane">
         <div className="card">
           <div className="card-header">
-            <div>
-              <span className="card-title">My Caseload</span>
-              <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                Quick view of assigned patients & status
-              </div>
-            </div>
-            <span style={{ fontSize: '12px', color: '#888', padding: '10px 10px' }}>
-              {patients.length} {patients.length === 1 ? 'Patient' : 'Patients'}
-            </span>
+             <span className="card-title">My Caseload</span>
+             <span style={{ fontSize: '12px', color: '#888' }}>{patients.length} Active</span>
           </div>
           
           <div className="caseload-list">
-            {patients.length === 0 ? (
-              <p style={{ color: '#888', padding: '10px' }}>No active patients.</p>
-            ) : (
-              patients.map((p) => (
-                <div key={p.id} style={{
-                  padding: '12px 0',
-                  borderBottom: '1px solid #eee',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-
-                  {/* LEFT GROUP: Avatar + Name + ID */}
+              {patients.map(p => (
+                <div key={p.id} style={{ padding: '12px 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  
+                  {/* Left Side: Avatar + Name */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{
-                      width: '40px', height: '40px',
-                      background: '#e0f7fa', color: '#006064',
-                      borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 'bold', fontSize: '16px'
-                    }}>
-                      {(p.full_name || p.user_name || "?").charAt(0).toUpperCase()}
+                    <div style={{ width: '35px', height: '35px', background: '#e0faea', color: '#006421', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '14px' }}>
+                      {(p.full_name || "P").charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ fontWeight: '600', fontSize: '14px' }}>
-                        {p.full_name || p.user_name || "Unknown Patient"}
+                      <div style={{ fontWeight: '600', fontSize: '14px', color: '#333' }}>
+                        {p.full_name}
                       </div>
-                      <div style={{ fontSize: '11px', color: '#999' }}>
-                        ID: {p.id}
-                      </div>
+                      <div style={{ fontSize: '10px', color: '#999' }}>ID: {p.id}</div>
                     </div>
                   </div>
 
-                  {/* RIGHT GROUP: Status */}
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ marginBottom: '4px' }}>
-                      <span style={{
-                        backgroundColor: '#dcfce7',
-                        color: '#166534',
-                        fontSize: '11px', /* Adjusted slightly smaller for badge look */
-                        fontWeight: '600',
-                        padding: '2px 8px',
-                        borderRadius: '12px',
-                      }}>
-                        Active
-                      </span>
-                    </div>
-                  </div>
+                  {/* Right Side: Status Badge */}
+                  <span style={{ backgroundColor: '#dcfce7', color: '#166534', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px' }}>
+                    Active
+                  </span>
 
                 </div>
-              ))
-            )}
+              ))}
           </div>
         </div>
       </div>

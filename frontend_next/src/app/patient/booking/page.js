@@ -1,16 +1,24 @@
 'use client';
 
 import { useState } from 'react';
-import styles from '../patient_dashboard.module.css'; // Reusing your existing CSS module
+import styles from '../patient_dashboard.module.css'; 
 
 export default function BookingPage() {
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState(null); // To track which time is clicked
+  const [selectedSlot, setSelectedSlot] = useState(null); 
+
+  // --- PRIVACY BLUR STYLE (Same as Dashboard) ---
+  const sensitiveStyle = {
+    filter: privacyMode ? 'blur(3px)' : 'none', 
+    transition: 'all 0.3s ease',
+    userSelect: privacyMode ? 'none' : 'text', 
+    opacity: privacyMode ? 0.8 : 1 
+  };
 
   return (
     <div style={{ fontFamily: 'Times New Roman, serif', minHeight: '100vh', backgroundColor: '#333' }}>
       
-      {/* ================= 1. FIXED BACKGROUND (Same as Dashboard) ================= */}
+      {/* ================= 1. FIXED BACKGROUND ================= */}
       <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
           backgroundImage: "url('/first_background_homepage.jpg')",
@@ -47,7 +55,9 @@ export default function BookingPage() {
                 background: 'rgba(255,255,255,0.2)', padding: '8px 15px', borderRadius: '30px',
                 backdropFilter: 'blur(10px)'
             }}>
-                <span style={{ fontSize: '14px', fontFamily: 'sans-serif', fontWeight: 'bold' }}>Privacy Mode</span>
+                <span style={{ fontSize: '14px', fontFamily: 'sans-serif', fontWeight: 'bold' }}>
+                    {privacyMode ? 'Privacy On' : 'Privacy Mode'}
+                </span>
                 <div onClick={() => setPrivacyMode(!privacyMode)} style={{ 
                     width: '40px', height: '20px', background: privacyMode ? '#4ade80' : '#ccc', 
                     borderRadius: '20px', position: 'relative', cursor: 'pointer', transition: 'background 0.3s'
@@ -108,7 +118,7 @@ export default function BookingPage() {
                         </select>
                     </div>
 
-                     <div>
+                      <div>
                         <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Date range</label>
                         <input type="text" placeholder="Next 7 days" style={{ width: '100%', padding: '10px', borderRadius: '8px', border: 'none', fontSize: '14px' }} />
                     </div>
@@ -132,10 +142,8 @@ export default function BookingPage() {
 
                     {/* Therapist Card 1 */}
                     <div style={{ background: 'rgba(255,255,255,0.9)', borderRadius: '12px', padding: '15px', color: '#333', marginBottom: '15px', display: 'flex', gap: '15px' }}>
-                        {/* Avatar */}
                         <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ccc', backgroundImage: 'url(https://i.pravatar.cc/150?img=5)', backgroundSize: 'cover' }}></div>
                         
-                        {/* Info */}
                         <div style={{ flex: 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                                 <h4 style={{ margin: 0, fontSize: '16px' }}>Dr. Alex Rivera</h4>
@@ -152,7 +160,6 @@ export default function BookingPage() {
                             <div style={{ fontSize: '11px', color: '#888', fontFamily: 'sans-serif' }}>Telehealth · 50 min · Rated 4.9/5</div>
                         </div>
 
-                        {/* Slots */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end' }}>
                              <div style={{ fontSize: '10px', color: '#666' }}>Next available slot</div>
                              <button 
@@ -190,7 +197,7 @@ export default function BookingPage() {
                 </div>
 
 
-                {/* --- Step 3: Confirm Booking --- */}
+                {/* --- Step 3: Confirm Booking (SENSITIVE DATA) --- */}
                 <div className={styles.glassCard}>
                     <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '15px', marginBottom: '15px' }}>
                          <h3 style={{ margin: '0', fontSize: '18px' }}>Step 3 · Confirm booking</h3>
@@ -199,7 +206,8 @@ export default function BookingPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'sans-serif', fontSize: '14px', marginBottom: '20px' }}>
                         <div>
                             <p style={{ opacity: 0.6, fontSize: '12px', marginBottom: '5px' }}>Confirm your session with</p>
-                            <p style={{ fontSize: '16px', fontWeight: 'bold' }}>Dr. Alex Rivera</p>
+                            {/* BLURRED NAME */}
+                            <p style={{ fontSize: '16px', fontWeight: 'bold', ...sensitiveStyle }}>Dr. Alex Rivera</p>
                         </div>
                         <div>
                             <span style={{ background: 'white', color: '#333', padding: '5px 10px', borderRadius: '15px', fontSize: '12px', fontWeight: 'bold' }}>Telehealth · 50 min</span>
@@ -209,7 +217,8 @@ export default function BookingPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '13px', fontFamily: 'sans-serif', marginBottom: '25px' }}>
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Date & time</div>
-                            <div>Tomorrow · 10:00 AM</div>
+                            {/* BLURRED TIME */}
+                            <div style={sensitiveStyle}>Tomorrow · 10:00 AM</div>
                         </div>
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Session link</div>
@@ -217,7 +226,8 @@ export default function BookingPage() {
                         </div>
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Reason for visit</div>
-                            <div>Anxiety & low mood check-in</div>
+                            {/* BLURRED REASON */}
+                            <div style={sensitiveStyle}>Anxiety & low mood check-in</div>
                         </div>
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Location</div>

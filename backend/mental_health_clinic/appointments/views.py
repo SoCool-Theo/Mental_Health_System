@@ -6,6 +6,7 @@ from users.models import PatientProfile
 from .serializers import PatientSerializer
 from .models import ClinicalNote
 from .serializers import ClinicalNoteSerializer
+from rest_framework.exceptions import ValidationError
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -70,5 +71,12 @@ class ClinicalNoteViewSet(viewsets.ModelViewSet):
         return ClinicalNote.objects.none()
 
     def perform_create(self, serializer):
+        user = self.request.user
+
+        # 1. Check if the user actually has a therapist profile
+        if not hasattr(user, 'therapist_profile'):
+            raise ValidationError(
+                {"detail": "You must be a registered therapist to save clinical notes."}
+            )
         # Auto-assign the therapist when saving
         serializer.save(therapist=self.request.user.therapist_profile)
