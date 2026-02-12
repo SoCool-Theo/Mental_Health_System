@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'mental_health_clinic.middleware.RemoveServerHeaderMiddleware', # Remove Server Header
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -149,3 +150,6 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # User stays logged in for 1 hour
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # They can refresh their session for 1 day
 }
+
+# Security settings
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Fixes "X-Content-Type-Options" alert
