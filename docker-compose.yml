@@ -1,0 +1,45 @@
+services:
+  # --- THE DATABASE ---
+  db:
+    image: postgres:18
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+
+  # --- THE DJANGO BACKEND ---
+  backend:
+    build: ./backend/mental_health_clinic
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend/mental_health_clinic:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+
+  # --- THE NEXT.JS FRONTEND ---
+  frontend:
+    build: ./frontend_next
+    command: npm run dev -- -H 0.0.0.0
+    volumes:
+      - ./frontend_next:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend_next/.env.local
+
+# --- the storage vault for the database ---
+volumes:
+  postgres_data:
