@@ -2,11 +2,6 @@
 __pycache__/
 *.pyc
 
-# Django
-db.sqlite3
-/staticfiles
-/media
-
 # Virtual environment
 venv/
 .venv/
@@ -15,7 +10,6 @@ venv/
 ../.idea/
 *.iml
 
-.env
 .env.*
 
 api_test.http

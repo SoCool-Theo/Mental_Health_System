@@ -1,3 +1,5 @@
 # PyCharm / JetBrains
 .idea/
 *.iml
+
+.env
