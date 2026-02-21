@@ -3,6 +3,7 @@ from .models import Service, Appointment
 from users.serializers import PatientProfileSerializer, TherapistProfileSerializer
 from users.models import PatientProfile
 from .models import ClinicalNote
+from .models import Availability
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,3 +39,8 @@ class ClinicalNoteSerializer(serializers.ModelSerializer):
         model = ClinicalNote
         fields = '__all__'
         read_only_fields = ['therapist', 'created_at'] # These are auto-filled
+
+class AvailabilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Availability
+        fields = ['id', 'therapist', 'date', 'start_time', 'end_time']

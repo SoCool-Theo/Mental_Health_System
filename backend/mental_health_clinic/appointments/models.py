@@ -16,6 +16,7 @@ class Service(models.Model):
         return f"{self.name} ({self.duration_minutes} min)"
 
 
+# --- Appointment ---
 class Appointment(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -60,3 +61,18 @@ class ClinicalNote(models.Model):
 
     def __str__(self):
         return f"Note for {self.patient} on {self.created_at.strftime('%Y-%m-%d')}"
+
+# --- Availability ---
+class Availability(models.Model):
+    therapist = models.ForeignKey(TherapistProfile, on_delete=models.CASCADE, related_name='availabilities')
+    date = models.DateField()
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+
+    class Meta:
+        verbose_name_plural = "Availabilities"
+        # Prevents the same doctor from creating duplicate slots
+        unique_together = ('therapist', 'date', 'start_time')
+
+    def __str__(self):
+        return f"{self.therapist} available on {self.date} from {self.start_time.strftime('%H:%M')} to {self.end_time.strftime('%H:%M')}"

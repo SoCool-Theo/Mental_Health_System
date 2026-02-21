@@ -1,12 +1,12 @@
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from .models import Service, Appointment
-from .serializers import ServiceSerializer, AppointmentSerializer
-from users.models import PatientProfile
-from .serializers import PatientSerializer
-from .models import ClinicalNote
-from .serializers import ClinicalNoteSerializer
 from rest_framework.exceptions import ValidationError
+
+from django.utils import timezone
+from .models import Service, Appointment, ClinicalNote, Availability
+from .serializers import ServiceSerializer, AppointmentSerializer, ClinicalNoteSerializer, PatientSerializer, AvailabilitySerializer
+from users.models import PatientProfile
+
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -80,3 +80,34 @@ class ClinicalNoteViewSet(viewsets.ModelViewSet):
             )
         # Auto-assign the therapist when saving
         serializer.save(therapist=self.request.user.therapist_profile)
+
+class AvailabilityViewSet(viewsets.ModelViewSet):
+    serializer_class = AvailabilitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # 1. Therapist Mode: See and manage their own schedule
+        if hasattr(user, 'therapist_profile'):
+            return Availability.objects.filter(therapist=user.therapist_profile).order_by('date', 'start_time')
+
+        # 2. Patient Mode: Look up a specific doctor's availability
+        # The frontend will call: /api/availability/?therapist_id=5
+        therapist_id = self.request.query_params.get('therapist_id')
+        if therapist_id:
+            return Availability.objects.filter(therapist__user__id=therapist_id, date__gte=timezone.now().date()).order_by('date', 'start_time')
+
+        # 3. Admin: See all
+        if user.is_superuser:
+            return Availability.objects.all()
+
+        return Availability.objects.none()
+
+    def perform_create(self, serializer):
+        # Auto-assign the logged-in therapist when they create a new time slot
+        user = self.request.user
+        if hasattr(user, 'therapist_profile'):
+            serializer.save(therapist=user.therapist_profile)
+        else:
+            raise ValidationError({"detail": "Only therapists can set availability."})
