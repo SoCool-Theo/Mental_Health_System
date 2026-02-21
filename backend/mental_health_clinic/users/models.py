@@ -15,7 +15,6 @@ class User(AbstractUser):
 
     role = models.CharField(max_length=50, choices=Role.choices)
 
-    # We can add common fields here if needed (e.g., phone_number)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
     def save(self, *args, **kwargs):
