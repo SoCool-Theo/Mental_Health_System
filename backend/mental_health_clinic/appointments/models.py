@@ -49,13 +49,17 @@ class Appointment(models.Model):
 
 
 class ClinicalNote(models.Model):
+    appointment = models.OneToOneField('Appointment', on_delete=models.CASCADE, related_name='clinical_note', null=True)
+
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE, related_name='notes')
     therapist = models.ForeignKey(TherapistProfile, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # Fields from the design
     diagnosis_code = models.CharField(max_length=50, blank=True, null=True)
     subjective_analysis = models.TextField(help_text="Patient reports, mood, etc.")
+
+    observations = models.TextField(help_text="Therapist objective observations", blank=True, null=True)
+
     treatment_plan = models.TextField(help_text="Interventions & homework")
     is_draft = models.BooleanField(default=False, help_text="True if note is still in progress")
 

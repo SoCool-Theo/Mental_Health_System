@@ -6,7 +6,7 @@ router = DefaultRouter()
 router.register(r'services', ServiceViewSet)
 router.register(r'appointments', AppointmentViewSet, basename='appointments')
 router.register(r'patients', PatientViewSet, basename='patient')
-router.register(r'notes', ClinicalNoteViewSet, basename='clinical-note')
+router.register(r'clinical-notes', ClinicalNoteViewSet, basename='clinical-note')
 router.register(r'availability', AvailabilityViewSet, basename='availability')
 
 urlpatterns = [
