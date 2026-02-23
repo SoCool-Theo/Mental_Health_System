@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Service, Appointment
+from .models import Service, Appointment, ClinicalNote, Availability
 
 class AppointmentAdmin(admin.ModelAdmin):
     list_display = ('patient', 'therapist', 'start_time', 'status')
@@ -7,3 +7,5 @@ class AppointmentAdmin(admin.ModelAdmin):
 
 admin.site.register(Service)
 admin.site.register(Appointment, AppointmentAdmin)
+admin.site.register(ClinicalNote)
+admin.site.register(Availability)

@@ -64,7 +64,7 @@ export default function DoctorSettingsPage() {
         {/* --- HEADER WITH BACK BUTTON --- */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
             <HoverButton 
-                onClick={() => router.push('/doctor/dashboard')}
+                onClick={() => router.push('/doctor/schedule')}
                 style={{ 
                     background: 'white', hoverBackground: '#f8fafc',
                     border: '1px solid #e2e8f0', borderRadius: '8px', 

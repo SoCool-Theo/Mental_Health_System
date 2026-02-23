@@ -49,10 +49,18 @@ export default function DoctorLayout({ children }) {
           <div className="sidebar-header">Main Navigation</div>
           <div className="sidebar-nav">
             
-            <Link href="/doctor/dashboard" style={{textDecoration: 'none'}}>
-                <div className={`sidebar-item ${pathname === '/doctor/dashboard' ? 'sidebar-item-active' : ''}`}>
+            <Link href="/doctor/schedule" style={{textDecoration: 'none'}}>
+                <div className={`sidebar-item ${pathname === '/doctor/schedule' ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:calendar-days" style={{fontSize: '18px'}}></iconify-icon>
                     <span>Schedule</span>
+                </div>
+            </Link>
+
+            {/* --- NEW AVAILABILITY LINK --- */}
+            <Link href="/doctor/availability" style={{textDecoration: 'none'}}>
+                <div className={`sidebar-item ${pathname === '/doctor/availability' ? 'sidebar-item-active' : ''}`}>
+                    <iconify-icon icon="lucide:clock" style={{fontSize: '18px'}}></iconify-icon>
+                    <span>My Hours</span>
                 </div>
             </Link>
 
@@ -115,7 +123,6 @@ export default function DoctorLayout({ children }) {
                         </span>
                     </div>
 
-                    {/* --- SETTINGS ICON (LINKED) --- */}
                     <Link href="/doctor/settings" style={{ textDecoration: 'none', display: 'flex' }}>
                         <div style={{ marginLeft: '12px', color: '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'color 0.2s' }}
                              onMouseOver={(e) => e.currentTarget.style.color = '#334155'}
@@ -124,8 +131,6 @@ export default function DoctorLayout({ children }) {
                             <iconify-icon icon="lucide:settings" style={{fontSize: '20px'}}></iconify-icon>
                         </div>
                     </Link>
-                    {/* ----------------------------- */}
-
                 </div>
             </div>
 

@@ -199,11 +199,14 @@ export default function ReschedulePage() {
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                     <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#ccc', backgroundImage: 'url(https://i.pravatar.cc/150?img=5)', backgroundSize: 'cover' }}></div>
                     <div>
-                        {/* We handle loading states securely here */}
                         <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '5px', ...sensitiveStyle }}>
-                           {currentAppointment ? "Dr. Selected Therapist" : 'Loading...'}
+                        {currentAppointment 
+                            ? `Dr. ${currentAppointment.therapist_details?.user?.first_name || ''} ${currentAppointment.therapist_details?.user?.last_name || ''}` 
+                            : 'Loading...'}
                         </div>
-                        <div style={{ fontSize: '13px', opacity: 0.8, fontFamily: 'sans-serif' }}>Licensed Therapist</div>
+                        <div style={{ fontSize: '13px', opacity: 0.8, fontFamily: 'sans-serif' }}>
+                            Licensed Therapist {currentAppointment?.therapist_details?.specialization ? `· ${currentAppointment.therapist_details.specialization}` : ''}
+                        </div>
                     </div>
                 </div>
 
