@@ -4,11 +4,13 @@ from users.serializers import PatientProfileSerializer, TherapistProfileSerializ
 from users.models import PatientProfile
 from .models import ClinicalNote
 from .models import Availability
+from .models import Location
+from .models import ClinicOperatingHour
 
 class ServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Service
-        fields = '__all__'
+        fields = ['id', 'name', 'duration_minutes', 'price', 'is_active']
 
 class ClinicalNoteSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,8 +19,7 @@ class ClinicalNoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['therapist', 'created_at']
 
 class AppointmentSerializer(serializers.ModelSerializer):
-    # These "details" fields let us see the actual names (e.g. "Dr. Smith")
-    # instead of just IDs (e.g. "4") when we READ data.
+
     therapist_details = TherapistProfileSerializer(source='therapist', read_only=True)
     patient_details = PatientProfileSerializer(source='patient', read_only=True)
     service_details = ServiceSerializer(source='service', read_only=True)
@@ -34,6 +35,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['end_time', 'created_at']
 
+    def validate_service(self, value):
+        """
+        This ensures nobody can book an appointment with an inactive service.
+        """
+        # 'value' is the Service object the user is trying to book
+        if value and not value.is_active:
+            raise serializers.ValidationError("This service is currently inactive and cannot be booked.")
+
+        return value
+
 class PatientSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
     full_name = serializers.CharField(source='user.get_full_name', read_only=True)
@@ -46,3 +57,13 @@ class AvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Availability
         fields = ['id', 'therapist', 'date', 'start_time', 'end_time']
+
+class LocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Location
+        fields = ['id', 'name', 'address', 'rooms', 'is_active']
+
+class ClinicOperatingHourSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ClinicOperatingHour
+        fields = ['id', 'day_of_week', 'is_open', 'start_time', 'end_time']

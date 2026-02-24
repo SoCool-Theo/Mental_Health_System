@@ -13,7 +13,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # Ensure 'role' is in the fields list
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser']
 
     def get_role(self, obj):
@@ -30,7 +29,22 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ['id', 'user', 'date_of_birth', 'medical_history']
+        fields = ['id', 'user', 'date_of_birth', 'medical_history', 'plan', 'therapist', 'status']
+
+    def update(self, instance, validated_data):
+        # 1. See what the Admin set the new status to (defaults to current if not provided)
+        new_status = validated_data.get('status', instance.status)
+
+        # 2. Tie your custom status to Django's core security lock
+        if new_status in ['Inactive', 'Archived', 'Locked']:
+            instance.user.is_active = False
+        elif new_status == 'Active':
+            instance.user.is_active = True
+
+        instance.user.save()  # Save the lock
+
+        # 3. Save the rest of the profile data normally
+        return super().update(instance, validated_data)
 
 
 class TherapistProfileSerializer(serializers.ModelSerializer):
@@ -38,27 +52,43 @@ class TherapistProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TherapistProfile
-        fields = ['id', 'user', 'license_number', 'specialization', 'bio']
+        fields = ['id', 'user', 'license_number', 'specialization', 'bio', 'profile_image', 'status']
+
+    def update(self, instance, validated_data):
+        new_status = validated_data.get('status', instance.status)
+
+        # For staff, we lock them out if they are Inactive or On Leave
+        if new_status in ['Inactive', 'On Leave']:
+            instance.user.is_active = False
+        elif new_status == 'Active':
+            instance.user.is_active = True
+
+        instance.user.save()
+
+        return super().update(instance, validated_data)
 
 
 # ==========================================
-# NEW: REGISTRATION SERIALIZER
+# REGISTRATION SERIALIZER
 # ==========================================
 
 class RegistrationSerializer(serializers.Serializer):
-    # Match the exact keys coming from the React frontend payload
     role = serializers.ChoiceField(choices=['PATIENT', 'THERAPIST'])
     firstName = serializers.CharField(max_length=150)
     lastName = serializers.CharField(max_length=150)
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
 
-    # Conditional fields (Frontend sends dob OR licenseNo)
+    # Conditional fields
     dob = serializers.DateField(required=False, allow_null=True)
     licenseNo = serializers.CharField(required=False, allow_blank=True, max_length=50)
 
+    # --- 1. ADD THESE NEW FIELDS ---
+    plan = serializers.CharField(required=False, allow_blank=True)
+    assignedTherapist = serializers.IntegerField(required=False, allow_null=True)
+    specialization = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
     def validate(self, data):
-        """Ensure conditional fields are present based on the role."""
         role = data.get('role')
 
         if role == 'PATIENT' and not data.get('dob'):
@@ -67,7 +97,6 @@ class RegistrationSerializer(serializers.Serializer):
         if role == 'THERAPIST' and not data.get('licenseNo'):
             raise serializers.ValidationError({"licenseNo": "License number is required for therapists."})
 
-        # Check if email is already registered
         if User.objects.filter(email=data.get('email')).exists():
             raise serializers.ValidationError({"email": "A user with this email already exists."})
 
@@ -75,16 +104,12 @@ class RegistrationSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data):
-        """Creates the Base User and their corresponding Profile."""
         role = validated_data['role']
         email = validated_data['email']
-
-        # Determine if they are staff based on your `get_role` logic
         is_staff_user = True if role == 'THERAPIST' else False
 
-        # 1. Create the Base User
         user = User.objects.create_user(
-            username=email,  # Using email as the username
+            username=email,
             email=email,
             password=validated_data['password'],
             first_name=validated_data['firstName'],
@@ -93,19 +118,21 @@ class RegistrationSerializer(serializers.Serializer):
             role=role
         )
 
-        # 2. Create the specific Profile
+        # --- 2. PASS THE NEW FIELDS DIRECTLY TO THE PROFILES ---
         if role == 'PATIENT':
             PatientProfile.objects.create(
                 user=user,
                 date_of_birth=validated_data['dob'],
-                medical_history=""  # Default empty, update later
+                plan=validated_data.get('plan', 'Standard Plan'),
+                therapist_id=validated_data.get('assignedTherapist'), # Links the Foreign Key!
+                medical_history=""
             )
         elif role == 'THERAPIST':
             TherapistProfile.objects.create(
                 user=user,
-                license_number=validated_data['licenseNo'],  # Maps frontend camelCase to backend snake_case
-                specialization="",  # Default empty, update later
-                bio=""  # Default empty, update later
+                license_number=validated_data['licenseNo'],
+                specialization=validated_data.get('specialization', ''),
+                bio=""
             )
 
         return user

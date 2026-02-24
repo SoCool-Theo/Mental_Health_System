@@ -33,7 +33,7 @@ export default function AdminLayout({ children }) {
 
           <Link href="/admin/users" style={{ textDecoration: 'none' }}>
             <div className={`nav-item ${pathname.includes('/users') ? 'active' : ''}`}>
-              <span></span> User
+              <span></span> Users
             </div>
           </Link>
 

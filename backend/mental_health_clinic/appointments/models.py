@@ -11,6 +11,7 @@ class Service(models.Model):
     name = models.CharField(max_length=100)
     duration_minutes = models.PositiveIntegerField(default=60, help_text="Duration in minutes")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    is_active = models.BooleanField(default=True, help_text="Uncheck to hide this service from booking")
 
     def __str__(self):
         return f"{self.name} ({self.duration_minutes} min)"
@@ -31,7 +32,7 @@ class Appointment(models.Model):
 
     # Time Management
     start_time = models.DateTimeField()
-    end_time = models.DateTimeField(editable=False)  # We will calculate this automatically
+    end_time = models.DateTimeField(editable=False)
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     notes = models.TextField(blank=True, help_text="Patient requests or Doctor notes")
@@ -80,3 +81,34 @@ class Availability(models.Model):
 
     def __str__(self):
         return f"{self.therapist} available on {self.date} from {self.start_time.strftime('%H:%M')} to {self.end_time.strftime('%H:%M')}"
+
+#--- Location ---
+class Location(models.Model):
+    """
+    Physical clinic locations where appointments take place.
+    """
+    name = models.CharField(max_length=150, help_text="e.g. Main Clinic (Bangkok)")
+    address = models.TextField(blank=True, null=True, help_text="Full street address")
+    rooms = models.PositiveIntegerField(default=1, help_text="Number of available consultation rooms")
+
+    # Toggle button for 'Open' vs 'Maintenance'
+    is_active = models.BooleanField(default=True, help_text="Uncheck if location is closed for maintenance")
+
+    def __str__(self):
+        return f"{self.name} ({'Open' if self.is_active else 'Closed'})"
+
+
+class ClinicOperatingHour(models.Model):
+    DAY_CHOICES = [
+        ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ('Wednesday', 'Wednesday'),
+        ('Thursday', 'Thursday'), ('Friday', 'Friday'), ('Saturday', 'Saturday'),
+        ('Sunday', 'Sunday')
+    ]
+
+    day_of_week = models.CharField(max_length=10, choices=DAY_CHOICES, unique=True)
+    is_open = models.BooleanField(default=True)
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.day_of_week}: {'Open' if self.is_open else 'Closed'}"

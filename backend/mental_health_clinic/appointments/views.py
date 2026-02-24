@@ -3,10 +3,23 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
 from django.utils import timezone
-from .models import Service, Appointment, ClinicalNote, Availability
+from .models import ClinicalNote, Availability
 from .serializers import ServiceSerializer, AppointmentSerializer, ClinicalNoteSerializer, PatientSerializer, AvailabilitySerializer
 from users.models import PatientProfile
 
+from rest_framework.response import Response
+from rest_framework.permissions import IsAdminUser
+from rest_framework.views import APIView
+from datetime import timedelta
+from django.db.models import Count
+from .models import Appointment, Service
+
+from rest_framework import viewsets
+from .models import Location
+from .serializers import LocationSerializer
+
+from .models import ClinicOperatingHour
+from .serializers import ClinicOperatingHourSerializer
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     serializer_class = AppointmentSerializer
@@ -38,6 +51,16 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        # Admin can see all services, including inactive ones (for management purposes)
+        if user.is_authenticated and user.role == 'ADMIN':
+            return Service.objects.all()
+
+        # Only show active ones for Patients, Therapists, or unauthenticated users
+        return Service.objects.filter(is_active=True)
 
 class PatientViewSet(viewsets.ModelViewSet):
     serializer_class = PatientSerializer
@@ -111,3 +134,55 @@ class AvailabilityViewSet(viewsets.ModelViewSet):
             serializer.save(therapist=user.therapist_profile)
         else:
             raise ValidationError({"detail": "Only therapists can set availability."})
+
+
+class AdminDashboardStatsView(APIView):
+    # Only allow users with is_staff=True to access this
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        today = timezone.now().date()
+
+        # 1. Calculate "Appointments This Week" (Last 7 days)
+        week_start = today - timedelta(days=6)
+
+        # Get all appointments in the last 7 days
+        recent_appts = Appointment.objects.filter(
+            start_time__date__gte=week_start,
+            start_time__date__lte=today
+        )
+
+        # Build a dictionary to hold the count for each day (e.g., {"Mon": 5, "Tue": 2})
+        daily_counts = {}
+        for i in range(7):
+            day = week_start + timedelta(days=i)
+            day_name = day.strftime("%a")  # Gets 'Mon', 'Tue', etc.
+            # Count appointments for this specific day
+            count = recent_appts.filter(start_time__date=day).count()
+            daily_counts[day_name] = count
+
+        # 2. Calculate "Service Breakdown" (Donut Chart)
+        # Group by service and count them
+        service_stats = Appointment.objects.values('service__name').annotate(count=Count('id'))
+
+        # Format the data cleanly for the frontend
+        service_breakdown = []
+        for stat in service_stats:
+            if stat['service__name']:  # Ignore nulls
+                service_breakdown.append({
+                    "name": stat['service__name'],
+                    "count": stat['count']
+                })
+
+        return Response({
+            "daily_appointments": daily_counts,
+            "service_breakdown": service_breakdown
+        })
+
+class LocationViewSet(viewsets.ModelViewSet):
+    queryset = Location.objects.all()
+    serializer_class = LocationSerializer
+
+class ClinicOperatingHourViewSet(viewsets.ModelViewSet):
+    queryset = ClinicOperatingHour.objects.all().order_by('id') # Keeps days in order
+    serializer_class = ClinicOperatingHourSerializer

@@ -2,19 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import api from '../../../../../api'; // Adjusted path based on typical deep nesting
+import api from '../../../../../api';
 
-export default function EditPatientPage() {
+export default function EditTherapistPage() {
   const router = useRouter();
   const params = useParams();
-  const patientId = params.id;
+  const therapistId = params.id;
 
   const [saveHover, setSaveHover] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
 
   // --- DYNAMIC STATES ---
   const [adminUser, setAdminUser] = useState(null);
-  const [therapists, setTherapists] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,9 +21,9 @@ export default function EditPatientPage() {
     firstName: '',
     lastName: '',
     email: '',
-    dob: '',
-    plan: 'Standard Plan',
-    assignedTherapist: '',
+    role: 'Therapist',
+    license: '',
+    specialization: '',
     status: 'Active'
   });
 
@@ -37,42 +36,40 @@ export default function EditPatientPage() {
 
             const config = { headers: { Authorization: `Bearer ${token}` } };
 
-            // Fetch Admin, Therapists, and Specific Patient Data
-            const [meRes, therapistsRes, patientRes] = await Promise.all([
+            // Fetch Admin and Specific Therapist Data
+            const [meRes, therapistRes] = await Promise.all([
                 api.get('users/me/', config),
-                api.get('users/therapists/', config),
-                api.get(`users/patients/${patientId}/`, config)
+                api.get(`users/therapists/${therapistId}/`, config)
             ]);
 
             setAdminUser(meRes.data);
-            setTherapists(therapistsRes.data.results || therapistsRes.data);
 
-            const patientData = patientRes.data;
+            const docData = therapistRes.data;
 
             // Map the backend data to our form fields
             setFormData({
-                firstName: patientData.user?.first_name || patientData.first_name || '',
-                lastName: patientData.user?.last_name || patientData.last_name || '',
-                email: patientData.user?.email || patientData.email || '',
-                dob: patientData.date_of_birth || '',
-                plan: patientData.plan || 'Standard Plan',
-                assignedTherapist: patientData.therapist?.id || patientData.therapist || '',
-                status: patientData.status || 'Active'
+                firstName: docData.user?.first_name || docData.first_name || '',
+                lastName: docData.user?.last_name || docData.last_name || '',
+                email: docData.user?.email || docData.email || '',
+                role: docData.role || 'Therapist', // Or derive from backend logic
+                license: docData.license_number || docData.license || '',
+                specialization: docData.specialization || '',
+                status: docData.status || 'Active'
             });
 
         } catch (error) {
-            console.error("Failed to load patient data:", error);
-            alert("Could not load patient details. They may have been deleted.");
+            console.error("Failed to load therapist data:", error);
+            alert("Could not load therapist details. They may have been deleted.");
             router.push('/admin/users');
         } finally {
             setLoadingData(false);
         }
     };
 
-    if (patientId) {
+    if (therapistId) {
         fetchData();
     }
-  }, [patientId, router]);
+  }, [therapistId, router]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -87,59 +84,56 @@ export default function EditPatientPage() {
         const token = localStorage.getItem('access_token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // Construct payload. Note: Adjust this based on how your backend expects nested user updates
+        // Construct payload (Adjust to match your DRF Serializer requirements)
         const updatePayload = {
             user: {
                 first_name: formData.firstName,
                 last_name: formData.lastName,
-                email: formData.email
             },
-            date_of_birth: formData.dob,
-            plan: formData.plan,
-            therapist: formData.assignedTherapist || null, // Handle unassigned
+            license_number: formData.license,
+            specialization: formData.specialization,
             status: formData.status
         };
 
-        await api.patch(`users/patients/${patientId}/`, updatePayload, config);
+        await api.patch(`users/therapists/${therapistId}/`, updatePayload, config);
 
-        alert("Patient updated successfully!");
+        alert("Staff profile updated successfully!");
         router.push('/admin/users');
 
     } catch (error) {
         console.error("Update failed:", error);
-        alert("Failed to update patient. Please check your network or inputs.");
+        alert("Failed to update staff profile. Please check your network or inputs.");
     } finally {
         setIsSubmitting(false);
     }
   };
 
-  // --- 3. HANDLE ARCHIVE ---
-  const handleArchive = async () => {
-      if (!confirm("Are you sure you want to archive this patient? They will lose access to the system.")) return;
+  // --- 3. HANDLE SUSPEND / DEACTIVATE ---
+  const handleDeactivate = async () => {
+      if (!confirm("Are you sure you want to deactivate this staff member? They will not be able to log in or see patients.")) return;
 
       try {
           const token = localStorage.getItem('access_token');
           const config = { headers: { Authorization: `Bearer ${token}` } };
 
-          // Using PATCH to change status rather than hard DELETE is usually safer for medical records
-          await api.patch(`users/patients/${patientId}/`, { status: 'Archived' }, config);
+          await api.patch(`users/therapists/${therapistId}/`, { status: 'Inactive' }, config);
 
-          alert("Patient archived successfully.");
+          alert("Staff member deactivated.");
           router.push('/admin/users');
       } catch (error) {
-          console.error("Archive failed", error);
-          alert("Failed to archive patient.");
+          console.error("Deactivation failed", error);
+          alert("Failed to deactivate staff member.");
       }
   };
 
-  if (loadingData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading patient profile...</div>;
+  if (loadingData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading staff profile...</div>;
 
   return (
     <>
       {/* --- PAGE HEADER --- */}
       <div className="header-card">
         <h2 style={{ fontFamily: 'Times New Roman, serif', fontSize: '28px', color: '#354f42', margin: 0 }}>
-          Edit Patient
+          Edit Staff Profile
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={{ textAlign: 'right' }}>
@@ -161,20 +155,20 @@ export default function EditPatientPage() {
         <div style={{ marginBottom: '30px', borderBottom: '1px solid #eee', paddingBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
                 <h3 style={{ fontFamily: 'Times New Roman, serif', fontSize: '24px', color: '#354f42', margin: '0 0 5px 0' }}>
-                    Patient Profile
+                    Staff Settings
                 </h3>
-                <span style={{ fontSize: '13px', color: '#666' }}>Editing details for ID: <strong>PT-{patientId}</strong></span>
+                <span style={{ fontSize: '13px', color: '#666' }}>Editing details for ID: <strong>TH-{therapistId}</strong></span>
             </div>
 
-            {/* Delete/Archive Button */}
+            {/* Deactivate Button */}
             <button
-                onClick={handleArchive}
+                onClick={handleDeactivate}
                 type="button"
                 style={{ background: '#fee2e2', color: '#991b1b', border: 'none', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', transition: 'background 0.2s' }}
                 onMouseOver={(e) => e.currentTarget.style.background = '#fecaca'}
                 onMouseOut={(e) => e.currentTarget.style.background = '#fee2e2'}
             >
-                Archive Account
+                Deactivate Account
             </button>
         </div>
 
@@ -200,10 +194,10 @@ export default function EditPatientPage() {
                 </div>
             </div>
 
-            {/* ROW 2: Email & DOB */}
+            {/* ROW 2: Email & Role */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
                 <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Email Address</label>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Work Email</label>
                     <input
                         type="email" name="email" required disabled
                         value={formData.email} onChange={handleChange}
@@ -212,43 +206,35 @@ export default function EditPatientPage() {
                     />
                 </div>
                 <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Date of Birth</label>
-                    <input
-                        type="date" name="dob"
-                        value={formData.dob} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', color: '#555' }}
-                    />
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>System Role</label>
+                    <select
+                        name="role"
+                        value={formData.role} onChange={handleChange}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', background: 'white' }}
+                    >
+                        <option value="Therapist">Therapist</option>
+                        <option value="Senior Therapist">Senior Therapist</option>
+                    </select>
                 </div>
             </div>
 
-            {/* ROW 3: Account Settings */}
+            {/* ROW 3: Professional Details & Status */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', background: '#f9fafa', padding: '20px', borderRadius: '12px' }}>
                 <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Subscription Plan</label>
-                    <select
-                        name="plan"
-                        value={formData.plan} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', background: 'white' }}
-                    >
-                        <option value="Standard Plan">Standard Plan</option>
-                        <option value="Premium Plan">Premium Plan</option>
-                        <option value="Crisis Support">Crisis Support</option>
-                    </select>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>License Number</label>
+                    <input
+                        type="text" name="license"
+                        value={formData.license} onChange={handleChange}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none' }}
+                    />
                 </div>
                 <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Assigned Therapist</label>
-                    <select
-                        name="assignedTherapist"
-                        value={formData.assignedTherapist} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', background: 'white' }}
-                    >
-                        <option value="">-- Unassigned --</option>
-                        {therapists.map(doc => (
-                            <option key={doc.id} value={doc.id}>
-                                Dr. {doc.user?.first_name} {doc.user?.last_name}
-                            </option>
-                        ))}
-                    </select>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Specialization</label>
+                    <input
+                        type="text" name="specialization"
+                        value={formData.specialization} onChange={handleChange}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none' }}
+                    />
                 </div>
                 <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Account Status</label>
@@ -258,9 +244,8 @@ export default function EditPatientPage() {
                         style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', background: 'white' }}
                     >
                         <option value="Active">Active</option>
-                        <option value="Pending">Pending</option>
+                        <option value="On Leave">On Leave</option>
                         <option value="Inactive">Inactive</option>
-                        <option value="Archived">Archived</option>
                     </select>
                 </div>
             </div>
@@ -279,11 +264,11 @@ export default function EditPatientPage() {
                 >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
-                <button 
+                <button
                     type="button" onClick={() => router.back()}
                     onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)}
-                    style={{ 
-                        background: cancelHover ? '#f5f5f5' : 'white', color: '#555', border: '1px solid #ccc', 
+                    style={{
+                        background: cancelHover ? '#f5f5f5' : 'white', color: '#555', border: '1px solid #ccc',
                         padding: '12px 25px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px',
                         transition: 'all 0.2s'
                     }}

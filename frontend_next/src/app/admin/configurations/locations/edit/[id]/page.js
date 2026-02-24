@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import api from '../../../../../api'; // Adjusted path for the 'add' folder depth
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import api from '../../../../../../api';
 
-export default function AddLocationPage() {
+export default function EditLocationPage() {
   const router = useRouter();
+  const params = useParams();
+  const locationId = params.id;
 
   // Button Hover & Loading States
   const [saveHover, setSaveHover] = useState(false);
   const [cancelHover, setCancelHover] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form State
@@ -20,11 +23,47 @@ export default function AddLocationPage() {
     status: 'Open'
   });
 
+  // --- 1. FETCH LOCATION DATA ON LOAD ---
+  useEffect(() => {
+    const fetchLocation = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) return router.push('/login');
+
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const response = await api.get(`locations/${locationId}/`, config);
+
+            const data = response.data;
+
+            // Map the backend data to our form fields
+            setFormData({
+                name: data.name || '',
+                address: data.address || '',
+                rooms: data.rooms || '',
+                // If is_active is false, we set the dropdown to Maintenance
+                status: data.is_active === false ? 'Maintenance' : 'Open'
+            });
+
+        } catch (error) {
+            console.error("Failed to load location data:", error);
+            alert("Could not load location details. It may have been deleted.");
+            router.push('/admin/configurations/locations');
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
+    if (locationId) {
+        fetchLocation();
+    }
+  }, [locationId, router]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // --- 2. HANDLE UPDATE ---
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -37,39 +76,42 @@ export default function AddLocationPage() {
         const payload = {
             name: formData.name,
             address: formData.address,
-            // Ensure rooms is sent as a number, default to 1 if empty
             rooms: formData.rooms ? parseInt(formData.rooms) : 1,
-            // Map the dropdown to the boolean 'is_active' field in Django
             is_active: formData.status === 'Open',
-            status: formData.status // Sending this as well just in case
+            status: formData.status
         };
 
-        await api.post('locations/', payload, config);
+        // PATCH request to update only the changed fields
+        await api.patch(`locations/${locationId}/`, payload, config);
 
-        alert("Location created successfully!");
-        router.push('/admin/configurations/locations'); // Go back to list
+        alert("Location updated successfully!");
+        router.push('/admin/configurations/locations');
 
     } catch (error) {
-        console.error("Failed to create location:", error);
+        console.error("Update failed:", error);
         if (error.response && error.response.data) {
             const errorMsg = Object.values(error.response.data).flat().join('\n');
             alert(`Error: ${errorMsg}`);
         } else {
-            alert("Failed to create location. Please check your network.");
+            alert("Failed to update location. Please check your network.");
         }
     } finally {
         setIsSubmitting(false);
     }
   };
 
+  if (loadingData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading location details...</div>;
+
   return (
     <>
         {/* Header */}
         <div style={{ marginBottom: '30px' }}>
             <h3 style={{ fontFamily: 'Times New Roman, serif', fontSize: '24px', color: '#354f42', margin: '0 0 5px 0' }}>
-                Add New Location
+                Edit Location
             </h3>
-            <span style={{ fontSize: '13px', color: '#666' }}>Enter details for the new clinic site.</span>
+            <span style={{ fontSize: '13px', color: '#666' }}>
+                Modifying details for Clinic Site ID: <strong>{locationId}</strong>
+            </span>
         </div>
 
         {/* Form Card */}
@@ -148,19 +190,19 @@ export default function AddLocationPage() {
                             opacity: isSubmitting ? 0.7 : 1
                         }}
                     >
-                        {isSubmitting ? 'Saving...' : 'Save Location'}
+                        {isSubmitting ? 'Saving...' : 'Save Changes'}
                     </button>
 
                     {/* Cancel Button */}
-                    <button 
+                    <button
                         type="button"
                         onClick={() => router.back()}
                         onMouseEnter={() => setCancelHover(true)}
                         onMouseLeave={() => setCancelHover(false)}
-                        style={{ 
+                        style={{
                             flex: 1,
                             background: cancelHover ? '#f0f0f0' : 'transparent',
-                            color: '#555', border: '1px solid #ccc', 
+                            color: '#555', border: '1px solid #ccc',
                             padding: '12px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px',
                             transition: 'all 0.2s'
                         }}
