@@ -13,7 +13,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_staff', 'is_superuser', 'phone_number']
 
     def get_role(self, obj):
         if obj.is_superuser:
@@ -29,7 +29,7 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PatientProfile
-        fields = ['id', 'user', 'date_of_birth', 'medical_history', 'plan', 'therapist', 'status']
+        fields = ['id', 'user', 'date_of_birth', 'medical_history', 'plan', 'therapist', 'status', 'gender', 'address','profile_image']
 
     def update(self, instance, validated_data):
         # 1. See what the Admin set the new status to (defaults to current if not provided)
@@ -52,7 +52,8 @@ class TherapistProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = TherapistProfile
-        fields = ['id', 'user', 'license_number', 'specialization', 'bio', 'profile_image', 'status']
+        fields = ['id', 'user', 'license_number', 'specialization', 'bio', 'profile_image', 'status', 'gender',
+                  'focus_areas']
 
     def update(self, instance, validated_data):
         new_status = validated_data.get('status', instance.status)
@@ -83,10 +84,20 @@ class RegistrationSerializer(serializers.Serializer):
     dob = serializers.DateField(required=False, allow_null=True)
     licenseNo = serializers.CharField(required=False, allow_blank=True, max_length=50)
 
-    # --- 1. ADD THESE NEW FIELDS ---
+    # Existing patient/therapist fields
     plan = serializers.CharField(required=False, allow_blank=True)
     assignedTherapist = serializers.IntegerField(required=False, allow_null=True)
     specialization = serializers.CharField(required=False, allow_blank=True, max_length=100)
+
+    # --- 1. NEW FIELDS FOR THERAPISTS ---
+    gender = serializers.CharField(required=False, allow_blank=True, max_length=50)
+    focus_areas = serializers.ListField(
+        child=serializers.CharField(max_length=100),
+        required=False,
+        default=list
+    )
+    # ADDED THIS LINE:
+    profile_image = serializers.ImageField(required=False, allow_null=True)
 
     def validate(self, data):
         role = data.get('role')
@@ -118,13 +129,12 @@ class RegistrationSerializer(serializers.Serializer):
             role=role
         )
 
-        # --- 2. PASS THE NEW FIELDS DIRECTLY TO THE PROFILES ---
         if role == 'PATIENT':
             PatientProfile.objects.create(
                 user=user,
                 date_of_birth=validated_data['dob'],
                 plan=validated_data.get('plan', 'Standard Plan'),
-                therapist_id=validated_data.get('assignedTherapist'), # Links the Foreign Key!
+                therapist_id=validated_data.get('assignedTherapist'),
                 medical_history=""
             )
         elif role == 'THERAPIST':
@@ -132,7 +142,12 @@ class RegistrationSerializer(serializers.Serializer):
                 user=user,
                 license_number=validated_data['licenseNo'],
                 specialization=validated_data.get('specialization', ''),
-                bio=""
+                bio="",
+                # --- 2. PASS THE NEW DATA INTO THE PROFILE ---
+                gender=validated_data.get('gender', ''),
+                focus_areas=validated_data.get('focus_areas', []),
+                # ADDED THIS LINE:
+                profile_image=validated_data.get('profile_image')
             )
 
         return user

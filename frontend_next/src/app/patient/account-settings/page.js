@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../../api';
 
 export default function AccountSettingsPage() {
   const router = useRouter();
@@ -10,7 +11,7 @@ export default function AccountSettingsPage() {
     emailNotifications: true,
     smsNotifications: false,
     twoFactor: true,
-    profileVisibility: false, 
+    profileVisibility: false,
     language: 'English (US)',
     timezone: 'Bangkok (GMT+7)'
   });
@@ -28,9 +29,39 @@ export default function AccountSettingsPage() {
     router.push('/patient/homepage');
   };
 
+  // --- NEW: HANDLE ACCOUNT DELETION ---
+  const handleDeleteAccount = async () => {
+      // 1. Force the user to confirm this destructive action
+      if (!confirm("Are you absolutely sure? This action cannot be undone and you will lose all access to your medical records.")) {
+          return;
+      }
+
+      try {
+          const token = localStorage.getItem('access_token');
+          if (!token) return router.push('/login');
+
+          const config = { headers: { Authorization: `Bearer ${token}` } };
+
+          // 2. Send DELETE request to your current user endpoint
+          await api.delete('users/me/', config);
+
+          // 3. Wipe the browser's memory of the user's session
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+
+          // 4. Redirect to login with a success message
+          alert("Your account has been permanently deleted.");
+          router.push('/login');
+
+      } catch (error) {
+          console.error("Account deletion failed:", error);
+          alert("Failed to delete account. Please ensure you are connected or contact support.");
+      }
+  };
+
   return (
     <div style={{ fontFamily: 'Times New Roman, serif', minHeight: '100vh', backgroundColor: '#333' }}>
-      
+
       {/* ================= BACKGROUND ================= */}
       <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -41,29 +72,29 @@ export default function AccountSettingsPage() {
       }}></div>
       <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(30, 30, 30, 0.5)', 
-            backdropFilter: 'blur(6px)',         
+            background: 'rgba(30, 30, 30, 0.5)',
+            backdropFilter: 'blur(6px)',
             WebkitBackdropFilter: 'blur(6px)',
             zIndex: 0
       }}></div>
 
       {/* ================= MAIN CONTENT ================= */}
-      <div style={{ 
-          position: 'relative', zIndex: 1, 
+      <div style={{
+          position: 'relative', zIndex: 1,
           paddingTop: '120px', paddingBottom: '60px',
           paddingLeft: '5%', paddingRight: '5%',
           color: 'white',
           maxWidth: '1200px',
           margin: '0 auto',
-          display: 'flex', 
-          alignItems: 'flex-end', // ALIGNS BUTTONS TO BOTTOM
-          gap: '40px' 
+          display: 'flex',
+          alignItems: 'flex-end',
+          gap: '40px'
       }}>
 
         {/* ================= LEFT SIDE: SETTINGS FORM ================= */}
         <div style={{
             flex: 1,
-            background: 'rgba(255, 255, 255, 0.1)', 
+            background: 'rgba(255, 255, 255, 0.1)',
             backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
             padding: '40px', borderRadius: '20px',
             border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -76,13 +107,14 @@ export default function AccountSettingsPage() {
             {/* --- SECTION 1: NOTIFICATIONS --- */}
             <div style={{ marginBottom: '40px' }}>
                 <h3 style={{ fontSize: '22px', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px', marginBottom: '20px' }}>Notifications</h3>
-                
+
+                {/* Email Toggle */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', fontFamily: 'sans-serif' }}>
                     <div>
                         <div style={{ fontSize: '16px', fontWeight: '600' }}>Email Notifications</div>
                         <div style={{ fontSize: '13px', opacity: 0.7 }}>Receive appointment reminders & updates via email.</div>
                     </div>
-                    <div onClick={() => toggle('emailNotifications')} style={{ 
+                    <div onClick={() => toggle('emailNotifications')} style={{
                         width: '50px', height: '26px', borderRadius: '20px', cursor: 'pointer', position: 'relative', transition: '0.3s',
                         background: settings.emailNotifications ? '#4ade80' : 'rgba(255,255,255,0.2)'
                     }}>
@@ -90,12 +122,13 @@ export default function AccountSettingsPage() {
                     </div>
                 </div>
 
+                {/* SMS Toggle */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontFamily: 'sans-serif' }}>
                     <div>
                         <div style={{ fontSize: '16px', fontWeight: '600' }}>SMS Alerts</div>
                         <div style={{ fontSize: '13px', opacity: 0.7 }}>Get urgent messages sent to your phone.</div>
                     </div>
-                    <div onClick={() => toggle('smsNotifications')} style={{ 
+                    <div onClick={() => toggle('smsNotifications')} style={{
                         width: '50px', height: '26px', borderRadius: '20px', cursor: 'pointer', position: 'relative', transition: '0.3s',
                         background: settings.smsNotifications ? '#4ade80' : 'rgba(255,255,255,0.2)'
                     }}>
@@ -108,13 +141,13 @@ export default function AccountSettingsPage() {
             {/* --- SECTION 2: SECURITY --- */}
             <div style={{ marginBottom: '40px' }}>
                 <h3 style={{ fontSize: '22px', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px', marginBottom: '20px' }}>Security & Privacy</h3>
-                
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', fontFamily: 'sans-serif' }}>
                     <div>
                         <div style={{ fontSize: '16px', fontWeight: '600' }}>Two-Factor Authentication</div>
                         <div style={{ fontSize: '13px', opacity: 0.7 }}>Add an extra layer of security to your account.</div>
                     </div>
-                    <div onClick={() => toggle('twoFactor')} style={{ 
+                    <div onClick={() => toggle('twoFactor')} style={{
                         width: '50px', height: '26px', borderRadius: '20px', cursor: 'pointer', position: 'relative', transition: '0.3s',
                         background: settings.twoFactor ? '#4ade80' : 'rgba(255,255,255,0.2)'
                     }}>
@@ -127,11 +160,11 @@ export default function AccountSettingsPage() {
             {/* --- SECTION 3: REGIONAL --- */}
             <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ fontSize: '22px', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px', marginBottom: '20px' }}>Regional Preferences</h3>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontFamily: 'sans-serif' }}>
                     <div>
                         <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', opacity: 0.9 }}>Language</label>
-                        <select 
+                        <select
                             name="language" value={settings.language} onChange={handleChange}
                             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', color: '#333', background: 'rgba(255,255,255,0.9)' }}
                         >
@@ -142,7 +175,7 @@ export default function AccountSettingsPage() {
                     </div>
                     <div>
                         <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', opacity: 0.9 }}>Timezone</label>
-                        <select 
+                        <select
                             name="timezone" value={settings.timezone} onChange={handleChange}
                             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: 'none', fontSize: '15px', color: '#333', background: 'rgba(255,255,255,0.9)' }}
                         >
@@ -154,16 +187,17 @@ export default function AccountSettingsPage() {
                 </div>
             </div>
 
-            {/* DANGER ZONE */}
+            {/* --- DANGER ZONE --- */}
             <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '1px solid rgba(255,50,50,0.3)' }}>
                 <h4 style={{ color: '#ff6b6b', margin: '0 0 10px 0' }}>Danger Zone</h4>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <p style={{ fontSize: '13px', fontFamily: 'sans-serif', margin: 0, opacity: 0.8 }}>
                         Once you delete your account, there is no going back.
                     </p>
-                    <button 
-                        style={{ 
-                            background: 'transparent', border: '1px solid #ff6b6b', color: '#ff6b6b', 
+                    <button
+                        onClick={handleDeleteAccount} // <-- ATTACHED FUNCTION HERE
+                        style={{
+                            background: 'transparent', border: '1px solid #ff6b6b', color: '#ff6b6b',
                             padding: '8px 15px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold',
                             transition: 'all 0.2s'
                         }}
@@ -177,23 +211,17 @@ export default function AccountSettingsPage() {
 
         </div>
 
-        {/* ================= RIGHT SIDE: BUTTONS (Aligned Bottom) ================= */}
-        <div style={{ 
-            width: '220px', 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: '20px',
-            paddingBottom: '20px' // Lift from very bottom slightly
+        {/* ================= RIGHT SIDE: BUTTONS ================= */}
+        <div style={{
+            width: '220px', display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '20px'
         }}>
-            
-            {/* Save Button */}
-            <button 
+            <button
                 onClick={handleNavigation}
-                style={{ 
-                    background: 'white', color: '#333', border: 'none', 
-                    padding: '15px 20px', borderRadius: '12px', 
+                style={{
+                    background: 'white', color: '#333', border: 'none',
+                    padding: '15px 20px', borderRadius: '12px',
                     fontSize: '16px', fontWeight: 'bold', fontFamily: 'Times New Roman, serif',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', 
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
                     cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
                     transition: 'transform 0.2s'
                 }}
@@ -203,7 +231,6 @@ export default function AccountSettingsPage() {
                 Save Changes
             </button>
 
-            {/* Cancel Button */}
             <button 
                 onClick={handleNavigation}
                 style={{ 
