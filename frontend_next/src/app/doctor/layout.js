@@ -24,8 +24,16 @@ export default function DoctorLayout({ children }) {
             });
 
             setDoctorName(response.data.display_name);
+            // --- IMAGE LOGIC ---
             if (response.data.profile_image) {
-                setDoctorAvatar(response.data.profile_image);
+                let imgUrl = response.data.profile_image;
+
+                // If Django sends a relative URL, attach the backend host manually
+                if (imgUrl.startsWith('/')) {
+                    imgUrl = `http://localhost:8000${imgUrl}`;
+                }
+
+                setDoctorAvatar(imgUrl);
             }
 
         } catch (err) {

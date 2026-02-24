@@ -12,6 +12,9 @@ export default function Dashboard() {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // --- NEW: FILTER STATE ---
+  const [viewMode, setViewMode] = useState('today'); // 'today' or 'all'
+
   // --- FETCH DATA ON LOAD ---
   useEffect(() => {
     const fetchData = async () => {
@@ -68,8 +71,24 @@ export default function Dashboard() {
       return name[0].toUpperCase();
   };
 
-  // --- GROUP APPOINTMENTS BY DATE ---
-  const groupedAppointments = appointments.reduce((acc, appt) => {
+  // --- FILTER APPOINTMENTS BASED ON VIEW MODE ---
+  const isToday = (dateString) => {
+      const today = new Date();
+      const date = new Date(dateString);
+      return date.getDate() === today.getDate() &&
+             date.getMonth() === today.getMonth() &&
+             date.getFullYear() === today.getFullYear();
+  };
+
+  const filteredAppointments = appointments.filter(appt => {
+      if (viewMode === 'today') {
+          return isToday(appt.start_time);
+      }
+      return true; // 'all' shows everything
+  });
+
+  // --- GROUP FILTERED APPOINTMENTS BY DATE ---
+  const groupedAppointments = filteredAppointments.reduce((acc, appt) => {
       const dateObj = new Date(appt.start_time);
 
       // Create a readable date string (e.g., "Monday, Oct 20")
@@ -95,20 +114,47 @@ export default function Dashboard() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
             <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Upcoming Schedule</h2>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1e293b', margin: 0 }}>Schedule</h2>
                 <p style={{ fontSize: '14px', color: '#64748b', margin: '5px 0 0 0' }}>Manage your appointments and sessions.</p>
             </div>
-            <span style={{ fontSize: '13px', background: '#e0f2fe', color: '#0284c7', padding: '6px 12px', borderRadius: '20px', fontWeight: '600' }}>
-                {appointments.length} Total Appointments
-            </span>
+
+            {/* --- VIEW TOGGLE BUTTONS --- */}
+            <div style={{ display: 'flex', background: '#f1f5f9', padding: '4px', borderRadius: '8px', gap: '4px' }}>
+                <button
+                    onClick={() => setViewMode('today')}
+                    style={{
+                        padding: '6px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+                        background: viewMode === 'today' ? 'white' : 'transparent',
+                        color: viewMode === 'today' ? '#0f766e' : '#64748b',
+                        boxShadow: viewMode === 'today' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    }}
+                >
+                    Today
+                </button>
+                <button
+                    onClick={() => setViewMode('all')}
+                    style={{
+                        padding: '6px 16px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: '600', transition: 'all 0.2s',
+                        background: viewMode === 'all' ? 'white' : 'transparent',
+                        color: viewMode === 'all' ? '#0f766e' : '#64748b',
+                        boxShadow: viewMode === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    }}
+                >
+                    All Upcoming
+                </button>
+            </div>
         </div>
 
         <div className="card" style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
 
           {loading ? (
               <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>Loading schedule...</div>
-          ) : appointments.length === 0 ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>No upcoming appointments booked.</div>
+          ) : filteredAppointments.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
+                  {viewMode === 'today' ? 'No appointments scheduled for today.' : 'No upcoming appointments booked.'}
+              </div>
           ) : (
               <div>
                   {Object.entries(groupedAppointments).map(([dateStr, appts]) => (
@@ -131,7 +177,7 @@ export default function Dashboard() {
                                           }}
                                           onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
                                           onMouseOut={(e) => e.currentTarget.style.background = 'white'}
-                                          onClick={() => router.push(`/doctor/patients/${appt.patient}`)} // Optional: click to go to patient profile
+                                          onClick={() => router.push(`/doctor/patients/${appt.patient}`)}
                                       >
 
                                           {/* Time Column */}

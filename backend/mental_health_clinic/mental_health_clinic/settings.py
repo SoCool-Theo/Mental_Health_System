@@ -153,3 +153,7 @@ SIMPLE_JWT = {
 
 # Security settings
 SECURE_CONTENT_TYPE_NOSNIFF = True  # Fixes "X-Content-Type-Options" alert
+
+# Media files (Uploaded by users)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

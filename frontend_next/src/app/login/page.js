@@ -27,9 +27,13 @@ export default function LoginPage() {
       });
       const user = userRes.data;
 
-      if (user.is_superuser) router.push('/admin/dashboard'); 
-      else if (user.is_staff) router.push('/doctor/schedule');
-      else router.push('/patient/homepage');
+      if (user.is_superuser) {
+          router.push('/admin/dashboard');
+      } else if (user.is_therapist || user.is_staff) {
+          router.push('/doctor/schedule');
+      } else {
+          router.push('/patient/homepage');
+      }
 
     } catch (error) {
       console.error("Login Error:", error);
