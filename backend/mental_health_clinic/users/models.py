@@ -26,7 +26,7 @@ class TherapistProfile(models.Model):
     bio = models.TextField(blank=True)
     profile_image = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     status = models.CharField(max_length=20, default='Active')
-
+    date_of_birth = models.DateField(null=True, blank=True)
     GENDER_CHOICES = [
         ('Female therapist', 'Female therapist'),
         ('Male therapist', 'Male therapist'),

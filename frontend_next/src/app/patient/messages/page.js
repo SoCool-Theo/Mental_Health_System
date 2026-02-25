@@ -1,57 +1,163 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import api from '../../../api';
 
 export default function MessagesPage() {
   const [privacyMode, setPrivacyMode] = useState(false);
   const [messageInput, setMessageInput] = useState('');
 
+  // --- AUTOSCROLL REF ---
+  const messagesEndRef = useRef(null);
+
   // --- PRIVACY BLUR STYLE ---
   const sensitiveStyle = {
-    filter: privacyMode ? 'blur(4px)' : 'none', 
+    filter: privacyMode ? 'blur(4px)' : 'none',
     transition: 'all 0.3s ease',
-    userSelect: privacyMode ? 'none' : 'text', 
-    opacity: privacyMode ? 0.6 : 1 
+    userSelect: privacyMode ? 'none' : 'text',
+    opacity: privacyMode ? 0.6 : 1
   };
 
-  // --- DUMMY DATA ---
-  const contacts = [
-    { id: 1, name: 'Dr. Alex Rivera', lastMsg: "Okay, I see. Let's explore that further...", time: '10:30 AM', unread: 0, active: true, img: '5' },
-    { id: 2, name: 'Dr. Maya Chen', lastMsg: 'Sent an attachment', time: 'Yesterday', unread: 2, active: false, img: '3' },
-    { id: 3, name: 'Support Team', lastMsg: 'Your booking is confirmed.', time: 'Mon', unread: 0, active: false, img: null },
-    { id: 4, name: 'Dr. Sarah Smith', lastMsg: 'Please fill out the form.', time: 'Tue', unread: 0, active: false, img: '1' },
-    { id: 5, name: 'Reception', lastMsg: 'Appointment rescheduled.', time: 'Wed', unread: 0, active: false, img: null },
-  ];
+  // --- DYNAMIC CONTACTS STATES ---
+  const [contacts, setContacts] = useState([]);
+  const [activeContact, setActiveContact] = useState(null);
+  const [chatHistory, setChatHistory] = useState([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
 
-  const chatHistory = [
-    { id: 1, sender: 'them', text: "Hi Joe, just checking in before our session tomorrow. How have things been since last week?", time: '10:30 AM' },
-    { id: 2, sender: 'me', text: "Hey Dr. Rivera. Honestly, still feeling quite anxious in the evenings.", time: '10:32 AM', read: true },
-    { id: 3, sender: 'them', text: "Okay, I see. Let's explore that further in our session. Have you tried the grounding exercise we discussed?", time: '10:33 AM' },
-    { id: 4, sender: 'me', text: "I tried a few times, but it's hard to focus.", time: '10:35 AM', read: true },
-    { id: 5, sender: 'them', text: "That is completely normal. We can practice it together.", time: '10:36 AM' },
-    { id: 6, sender: 'them', text: "Also, please bring your journal logs if you have them.", time: '10:36 AM' },
-  ];
+  // --- 1. FETCH ASSIGNED DOCTORS ON LOAD ---
+  useEffect(() => {
+    const fetchDoctors = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
 
+            const response = await api.get('users/doctors-list/', config);
+
+            setContacts(response.data);
+
+            if (response.data.length > 0) {
+                setActiveContact(response.data[0]);
+            }
+        } catch (error) {
+            console.error("Failed to fetch doctors list:", error);
+        } finally {
+            setIsLoadingContacts(false);
+        }
+    };
+
+    fetchDoctors();
+  }, []);
+
+  // --- 2. AUTO-SCROLL TO BOTTOM ---
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
+  // --- 3. FETCH MESSAGES & POLL EVERY 3 SECONDS ---
+  useEffect(() => {
+    if (!activeContact) return;
+
+    let intervalId;
+
+    const fetchMessages = async () => {
+        try {
+            const token = localStorage.getItem('access_token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+
+            const response = await api.get(`messages/${activeContact.id}/`, config);
+
+            if (response.data) {
+                setChatHistory(response.data);
+            }
+        } catch (error) {
+            console.error("Failed to fetch messages:", error);
+        }
+    };
+
+    fetchMessages();
+    intervalId = setInterval(fetchMessages, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [activeContact]);
+
+
+  // --- 4. HANDLE SENDING MESSAGES ---
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!messageInput.trim() || !activeContact) return;
+
+    const textToSend = messageInput;
+    setMessageInput('');
+
+    try {
+        const token = localStorage.getItem('access_token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const payload = { content: textToSend };
+
+        const response = await api.post(`messages/${activeContact.id}/`, payload, config);
+
+        setChatHistory(prev => [...prev, response.data]);
+
+    } catch (error) {
+        console.error("Failed to send message:", error);
+        alert("Failed to send message. Please check your connection.");
+        setMessageInput(textToSend);
+    }
+  };
+
+  const formatTime = (isoString) => {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // --- 5. CALCULATE DOCTOR'S ONLINE STATUS ---
+  const getOnlineStatus = () => {
+      if (!activeContact || chatHistory.length === 0) {
+          return { text: 'Offline', color: '#888' }; // Default if no messages
+      }
+
+      // Find the last message the DOCTOR sent
+      const lastDoctorMsg = [...chatHistory].reverse().find(msg => msg.sender === activeContact.id);
+
+      if (!lastDoctorMsg) {
+          return { text: 'Offline', color: '#888' };
+      }
+
+      const msgTime = new Date(lastDoctorMsg.timestamp).getTime();
+      const now = new Date().getTime();
+      const diffInMinutes = (now - msgTime) / (1000 * 60);
+
+      // If they sent a message in the last 5 minutes, they are active!
+      if (diffInMinutes < 5) {
+          return { text: 'Active now', color: '#4ade80' };
+      } else if (diffInMinutes < 60) {
+          return { text: `Active ${Math.floor(diffInMinutes)}m ago`, color: '#ccc' };
+      } else {
+          return { text: 'Offline', color: '#888' };
+      }
+  };
+
+  const currentStatus = getOnlineStatus();
 
   return (
     <div style={{ fontFamily: 'Times New Roman, serif', minHeight: '100vh', backgroundColor: '#333' }}>
-      
+
       {/* ================= FIXED BACKGROUND ================= */}
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundImage: "url('/first_background_homepage.jpg')", backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0 }}></div>
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(30, 30, 30, 0.5)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 0 }}></div>
 
-
       {/* ================= MAIN CONTENT CONTAINER ================= */}
-      <div style={{ 
-          position: 'relative', zIndex: 1, 
-          minHeight: '100vh',      
-          paddingTop: '120px',    
-          paddingBottom: '50px',   
+      <div style={{
+          position: 'relative', zIndex: 1,
+          minHeight: '100vh',
+          paddingTop: '120px',
+          paddingBottom: '50px',
           paddingLeft: '5%', paddingRight: '5%',
           display: 'flex', flexDirection: 'column',
           color: 'white'
       }}>
-        
+
         {/* --- PAGE HEADER --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h1 style={{ fontSize: '42px', fontWeight: 'normal', margin: 0 }}>Messages</h1>
@@ -67,21 +173,20 @@ export default function MessagesPage() {
             </div>
         </div>
 
-
         {/* --- THE MAIN GLASS INTERFACE BOX --- */}
         <div style={{
-            height: '85vh', 
-            minHeight: '800px', 
+            height: '85vh',
+            minHeight: '800px',
             background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)',
             borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.2)',
-            display: 'grid', gridTemplateColumns: '350px 1fr', 
-            overflow: 'hidden', 
+            display: 'grid', gridTemplateColumns: '350px 1fr',
+            overflow: 'hidden',
             boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
         }}>
 
             {/* ================= LEFT SIDEBAR: CONTACTS ================= */}
             <div style={{ borderRight: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', height: '100%' }}>
-                
+
                 {/* Search Bar */}
                 <div style={{ padding: '20px', flexShrink: 0 }}>
                     <input type="text" placeholder="🔍 Search messages" style={{ width: '100%', padding: '12px 20px', borderRadius: '30px', border: 'none', background: 'rgba(255,255,255,0.2)', color: 'white', outline: 'none', fontFamily: 'sans-serif' }} />
@@ -89,52 +194,64 @@ export default function MessagesPage() {
 
                 {/* Scrollable Contact List */}
                 <div style={{ flex: 1, overflowY: 'auto', fontFamily: 'sans-serif' }}>
-                    {contacts.map(contact => (
-                        <div key={contact.id} style={{ 
-                            display: 'flex', gap: '15px', padding: '15px 20px', cursor: 'pointer',
-                            background: contact.active ? 'rgba(255,255,255,0.15)' : 'transparent',
-                            borderLeft: contact.active ? '4px solid white' : '4px solid transparent',
-                            transition: 'background 0.2s'
-                        }}>
-                            {/* Avatar */}
-                            <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ccc', backgroundImage: contact.img ? `url(https://i.pravatar.cc/150?img=${contact.img})` : 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', color: '#555' }}>
-                                {contact.img ? '' : contact.name[0]}
-                            </div>
-                            
-                            {/* Info */}
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                                    <span style={{ fontWeight: 'bold', fontSize: '15px' }}>{contact.name}</span>
-                                    <span style={{ fontSize: '12px', opacity: 0.7 }}>{contact.time}</span>
+                    {isLoadingContacts ? (
+                        <div style={{ padding: '20px', textAlign: 'center', opacity: 0.7, fontSize: '14px' }}>Loading doctors...</div>
+                    ) : contacts.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', opacity: 0.7, fontSize: '14px' }}>No assigned doctors found.</div>
+                    ) : (
+                        contacts.map(contact => (
+                            <div
+                                key={contact.id}
+                                onClick={() => setActiveContact(contact)}
+                                style={{
+                                    display: 'flex', gap: '15px', padding: '15px 20px', cursor: 'pointer',
+                                    background: activeContact?.id === contact.id ? 'rgba(255,255,255,0.15)' : 'transparent',
+                                    borderLeft: activeContact?.id === contact.id ? '4px solid white' : '4px solid transparent',
+                                    transition: 'background 0.2s'
+                                }}
+                            >
+                                {/* Avatar */}
+                                <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ccc', backgroundImage: contact.img ? `url(${contact.img})` : 'none', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', color: '#555', backgroundSize: 'cover' }}>
+                                    {contact.img ? '' : contact.name[0]}
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    
-                                    {/* BLURRED PREVIEW */}
-                                    <p style={{ margin: 0, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...sensitiveStyle }}>
-                                        {contact.lastMsg}
-                                    </p>
 
-                                    {contact.unread > 0 && (
-                                        <span style={{ background: '#ff5555', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', marginLeft: '10px' }}>{contact.unread}</span>
-                                    )}
+                                {/* Info */}
+                                <div style={{ flex: 1, overflow: 'hidden' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+                                        <span style={{ fontWeight: 'bold', fontSize: '15px' }}>{contact.name}</span>
+                                        <span style={{ fontSize: '12px', opacity: 0.7 }}>{contact.time}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+                                        <p style={{ margin: 0, fontSize: '13px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', ...sensitiveStyle }}>
+                                            {contact.lastMsg}
+                                        </p>
+
+                                        {contact.unread > 0 && (
+                                            <span style={{ background: '#ff5555', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', marginLeft: '10px' }}>{contact.unread}</span>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
-
             {/* ================= RIGHT MAIN: CHAT WINDOW ================= */}
             <div style={{ display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'sans-serif' }}>
-                
+
                 {/* Chat Header */}
                 <div style={{ padding: '15px 25px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundImage: 'url(https://i.pravatar.cc/150?img=5)', backgroundSize: 'cover' }}></div>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundImage: activeContact?.img ? `url(${activeContact.img})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#ccc' }}></div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '16px' }}>Dr. Alex Rivera</h3>
-                            <span style={{ fontSize: '12px', color: '#4ade80' }}>● Active now</span>
+                            <h3 style={{ margin: 0, fontSize: '16px' }}>{activeContact?.name || 'Select a doctor'}</h3>
+
+                            {/* --- DYNAMIC ONLINE STATUS --- */}
+                            <span style={{ fontSize: '12px', color: currentStatus.color, transition: 'color 0.3s' }}>
+                                ● {currentStatus.text}
+                            </span>
                         </div>
                     </div>
                     <div style={{ fontSize: '24px', cursor: 'pointer', opacity: 0.7 }}>⋮</div>
@@ -142,51 +259,61 @@ export default function MessagesPage() {
 
                 {/* Message History (Scrollable Area) */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '25px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    
-                    {chatHistory.map(msg => (
-                        <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.sender === 'me' ? 'flex-end' : 'flex-start' }}>
-                            <div style={{ 
-                                maxWidth: '70%', padding: '15px 20px', borderRadius: '20px',
-                                background: msg.sender === 'me' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-                                borderTopRightRadius: msg.sender === 'me' ? '5px' : '20px',
-                                borderTopLeftRadius: msg.sender === 'them' ? '5px' : '20px'
-                            }}>
-                                {/* BLURRED MESSAGE CONTENT */}
-                                <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.5', ...sensitiveStyle }}>
-                                    {msg.text}
-                                </p>
-                            </div>
-                             <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                {msg.time}
-                                {msg.sender === 'me' && msg.read && <span style={{ color: '#4ade80' }}>✓✓</span>}
-                             </div>
-                        </div>
-                    ))}
 
+                    {!activeContact ? (
+                        <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '20px' }}>Please select a doctor to start messaging.</div>
+                    ) : chatHistory.length === 0 ? (
+                        <div style={{ textAlign: 'center', opacity: 0.5, marginTop: '20px' }}>No messages yet. Say hello!</div>
+                    ) : (
+                        chatHistory.map(msg => {
+                            // If sender ID matches the doctor's ID, they sent it
+                            const isThem = msg.sender === activeContact.id;
+
+                            return (
+                                <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isThem ? 'flex-start' : 'flex-end' }}>
+                                    <div style={{
+                                        maxWidth: '70%', padding: '15px 20px', borderRadius: '20px',
+                                        background: isThem ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.25)',
+                                        borderTopRightRadius: isThem ? '20px' : '5px',
+                                        borderTopLeftRadius: isThem ? '5px' : '20px'
+                                    }}>
+                                        <p style={{ margin: 0, fontSize: '15px', lineHeight: '1.5', ...sensitiveStyle }}>
+                                            {msg.content}
+                                        </p>
+                                    </div>
+                                    <div style={{ fontSize: '11px', opacity: 0.6, marginTop: '5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        {formatTime(msg.timestamp)}
+                                    </div>
+                                </div>
+                            );
+                        })
+                    )}
+
+                    <div ref={messagesEndRef} />
                 </div>
 
-
                 {/* Message Input Area (Fixed at bottom) */}
-                <div style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+                <form onSubmit={handleSendMessage} style={{ padding: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
                     <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '30px', padding: '5px 5px 5px 20px', display: 'flex', alignItems: 'center' }}>
-                        <input 
-                            type="text" 
-                            placeholder="Type a message..." 
+
+                        <input
+                            type="text"
+                            placeholder="Type a message..."
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
-                            style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '15px' }} 
+                            disabled={!activeContact}
+                            style={{ flex: 1, background: 'transparent', border: 'none', color: 'white', outline: 'none', fontSize: '15px' }}
                         />
-                        <button style={{ background: 'transparent', border: 'none', fontSize: '24px', padding: '10px', cursor: 'pointer', opacity: 0.7 }}>📎</button>
-                        <button style={{ background: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', cursor: 'pointer', color: '#333', marginLeft: '10px' }}>
+
+                        {/* SEND BUTTON (Attachment icon removed!) */}
+                        <button type="submit" disabled={!activeContact} style={{ background: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '20px', cursor: 'pointer', color: '#333', marginLeft: '10px' }}>
                             ➤
                         </button>
                     </div>
-                </div>
+                </form>
 
             </div>
-
         </div>
-
       </div>
     </div>
   );

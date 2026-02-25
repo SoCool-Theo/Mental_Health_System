@@ -17,6 +17,22 @@ class Service(models.Model):
         return f"{self.name} ({self.duration_minutes} min)"
 
 
+#--- Location ---
+class Location(models.Model):
+    """
+    Physical clinic locations where appointments take place.
+    """
+    name = models.CharField(max_length=150, help_text="e.g. Main Clinic (Bangkok)")
+    address = models.TextField(blank=True, null=True, help_text="Full street address")
+    rooms = models.PositiveIntegerField(default=1, help_text="Number of available consultation rooms")
+
+    # Toggle button for 'Open' vs 'Maintenance'
+    is_active = models.BooleanField(default=True, help_text="Uncheck if location is closed for maintenance")
+
+    def __str__(self):
+        return f"{self.name} ({'Open' if self.is_active else 'Closed'})"
+
+
 # --- Appointment ---
 class Appointment(models.Model):
     class Status(models.TextChoices):
@@ -37,6 +53,7 @@ class Appointment(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     notes = models.TextField(blank=True, help_text="Patient requests or Doctor notes")
     created_at = models.DateTimeField(auto_now_add=True)
+    location = models.ForeignKey(Location, on_delete=models.SET_NULL, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Auto-calculate end_time based on the Service duration
@@ -81,22 +98,6 @@ class Availability(models.Model):
 
     def __str__(self):
         return f"{self.therapist} available on {self.date} from {self.start_time.strftime('%H:%M')} to {self.end_time.strftime('%H:%M')}"
-
-#--- Location ---
-class Location(models.Model):
-    """
-    Physical clinic locations where appointments take place.
-    """
-    name = models.CharField(max_length=150, help_text="e.g. Main Clinic (Bangkok)")
-    address = models.TextField(blank=True, null=True, help_text="Full street address")
-    rooms = models.PositiveIntegerField(default=1, help_text="Number of available consultation rooms")
-
-    # Toggle button for 'Open' vs 'Maintenance'
-    is_active = models.BooleanField(default=True, help_text="Uncheck if location is closed for maintenance")
-
-    def __str__(self):
-        return f"{self.name} ({'Open' if self.is_active else 'Closed'})"
-
 
 class ClinicOperatingHour(models.Model):
     DAY_CHOICES = [

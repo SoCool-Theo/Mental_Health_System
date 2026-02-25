@@ -48,6 +48,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         print("   ❌ NO PROFILE FOUND: Returning empty list")
         return Appointment.objects.none()
 
+    def perform_create(self, serializer):
+        # This intercepts the POST request and forces the appointment
+        # to be booked under the currently logged-in patient.
+        if hasattr(self.request.user, 'patient_profile'):
+            serializer.save(patient=self.request.user.patient_profile)
+        else:
+            raise ValidationError({"detail": "Only patients can book appointments."})
+
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()
     serializer_class = ServiceSerializer

@@ -33,7 +33,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             'therapist_details', 'patient_details', 'service_details',
             'clinical_note'
         ]
-        read_only_fields = ['end_time', 'created_at']
+        read_only_fields = ['patient', 'status', 'end_time']
 
     def validate_service(self, value):
         """
@@ -57,6 +57,7 @@ class AvailabilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = Availability
         fields = ['id', 'therapist', 'date', 'start_time', 'end_time']
+        read_only_fields = ['therapist']
 
 class LocationSerializer(serializers.ModelSerializer):
     class Meta:

@@ -76,10 +76,7 @@ export default function DoctorLayout({ children }) {
                 <div className={`sidebar-item ${pathname.includes('message') ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:message-square" style={{fontSize: '18px'}}></iconify-icon>
                     <span>Messages</span>
-                    <span style={{ 
-                        marginLeft: 'auto', background: '#ef4444', color: 'white', 
-                        fontSize: '10px', padding: '2px 6px', borderRadius: '10px' 
-                    }}>5</span>
+
                 </div>
             </Link>
 

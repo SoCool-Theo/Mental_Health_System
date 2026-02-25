@@ -13,20 +13,24 @@ export default function BookingPage() {
   const [availabilities, setAvailabilities] = useState({});
   const [availableSpecialties, setAvailableSpecialties] = useState([]);
   const [availableServices, setAvailableServices] = useState([]);
+  const [locations, setLocations] = useState([]); // NEW: State for clinic locations
   const [patientProfileId, setPatientProfileId] = useState(null);
 
-  // --- FILTER STATES (Step 1 & Search) ---
+  // --- FILTER STATES ---
   const [specialtyFilter, setSpecialtyFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState('');
-
-  // NEW FILTER STATES
   const [genderFilter, setGenderFilter] = useState('Any');
   const [focusAreaFilters, setFocusAreaFilters] = useState([]);
 
-  // --- SELECTION STATES (Step 2 & 3) ---
+  // --- SELECTION STATES ---
   const [selectedTherapist, setSelectedTherapist] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
+
+  // NEW: Session Format States
+  const [sessionFormat, setSessionFormat] = useState('Online'); // 'Online' or 'In-Person'
+  const [selectedLocationId, setSelectedLocationId] = useState('');
+
   const [reason, setReason] = useState('');
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -53,7 +57,7 @@ export default function BookingPage() {
             const therapistList = docData.results || docData;
             setTherapists(therapistList);
 
-            // Extract unique specialties
+            // Extract specialties
             const specialties = [...new Set(therapistList.map(t => t.specialization).filter(Boolean))];
             setAvailableSpecialties(specialties);
 
@@ -77,6 +81,15 @@ export default function BookingPage() {
                 if (services.length > 0) setSelectedServiceId(services[0].id);
             }
 
+            // NEW: Fetch Clinic Locations
+            const locRes = await fetch('http://localhost:8000/api/locations/', { headers });
+            if (locRes.ok) {
+                const locData = await locRes.json();
+                const activeLocations = (locData.results || locData).filter(loc => loc.is_active);
+                setLocations(activeLocations);
+                if (activeLocations.length > 0) setSelectedLocationId(activeLocations[0].id);
+            }
+
             // Fetch Patient Profile
             const userRes = await fetch('http://localhost:8000/api/users/me/', { headers });
             if (userRes.ok) {
@@ -97,12 +110,11 @@ export default function BookingPage() {
     fetchBookingData();
   }, []);
 
-  // --- HELPER: TOGGLE FOCUS AREAS ---
   const toggleFocusArea = (area) => {
     if (focusAreaFilters.includes(area)) {
-        setFocusAreaFilters(focusAreaFilters.filter(a => a !== area)); // Remove if already selected
+        setFocusAreaFilters(focusAreaFilters.filter(a => a !== area));
     } else {
-        setFocusAreaFilters([...focusAreaFilters, area]); // Add if not selected
+        setFocusAreaFilters([...focusAreaFilters, area]);
     }
   };
 
@@ -112,7 +124,6 @@ export default function BookingPage() {
       const matchesSpecialty = specialtyFilter ? doc.specialization === specialtyFilter : true;
       const matchesGender = (genderFilter && genderFilter !== 'Any') ? doc.gender === genderFilter : true;
 
-      // Check if the therapist has ALL the focus areas the user clicked
       const docFocusAreas = doc.focus_areas || [];
       const matchesFocusAreas = focusAreaFilters.length > 0
           ? focusAreaFilters.every(fa => docFocusAreas.includes(fa))
@@ -121,7 +132,6 @@ export default function BookingPage() {
       return matchesSearch && matchesSpecialty && matchesGender && matchesFocusAreas;
   });
 
-  // --- HELPER FORMATTING FUNCTIONS ---
   const formatTime = (timeString) => {
       if (!timeString) return '';
       const [hour, minute] = timeString.split(':');
@@ -143,6 +153,16 @@ export default function BookingPage() {
     const token = localStorage.getItem('access_token');
     const startDateTime = `${selectedSlot.date}T${selectedSlot.start_time}`;
 
+    // Prepare payload
+    const payload = {
+        therapist: selectedTherapist.id,
+        service: selectedServiceId,
+        start_time: startDateTime,
+        notes: reason,
+        // Include the location if it's an in-person visit!
+        ...(sessionFormat === 'In-Person' && { location: selectedLocationId })
+    };
+
     try {
         const response = await fetch('http://localhost:8000/api/appointments/', {
             method: 'POST',
@@ -150,14 +170,7 @@ export default function BookingPage() {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                therapist: selectedTherapist.id,
-                start_time: startDateTime,
-                notes: reason,
-                status: 'SCHEDULED',
-                service: selectedServiceId,
-                patient: patientProfileId
-            })
+            body: JSON.stringify(payload)
         });
 
         if (response.ok) {
@@ -165,7 +178,7 @@ export default function BookingPage() {
         } else {
             const errorData = await response.json();
             console.error("Booking failed. Django says:", errorData);
-            alert("Failed to confirm booking. Check the console for details.");
+            alert("Failed to confirm booking: " + JSON.stringify(errorData));
         }
     } catch (error) {
         console.error("Network error:", error);
@@ -182,7 +195,6 @@ export default function BookingPage() {
 
       <div style={{ position: 'relative', zIndex: 1, paddingTop: '120px', paddingBottom: '50px', paddingLeft: '60px', paddingRight: '60px' }}>
 
-        {/* --- HEADER --- */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', color: 'white' }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '20px' }}>
                 <h1 style={{ fontSize: '42px', fontWeight: 'normal', margin: 0 }}>Book a new appointment</h1>
@@ -199,7 +211,6 @@ export default function BookingPage() {
             </div>
         </div>
 
-        {/* --- MAIN GRID LAYOUT --- */}
         <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
 
             {/* ================= LEFT COLUMN: FILTERS ================= */}
@@ -207,10 +218,7 @@ export default function BookingPage() {
                 <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>Step 1 · Filters</h3>
                 <p style={{ fontSize: '12px', opacity: 0.7, fontFamily: 'sans-serif', marginBottom: '25px' }}>Narrow down your therapist matches</p>
 
-                {/* Filter Inputs */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', fontFamily: 'sans-serif' }}>
-
-                    {/* DYNAMIC SPECIALTY FILTER */}
                     <div>
                         <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Specialty</label>
                         <select
@@ -225,27 +233,16 @@ export default function BookingPage() {
                         </select>
                     </div>
 
-                    {/* DYNAMIC FOCUS AREAS (No changes needed here, these look great in your screenshot!) */}
                     <div>
                         <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Focus areas</label>
                         <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-                            {['Anxiety', 'Depression', 'Stress & burnout'].map(tag => {
+                            {['Anxiety', 'Depression', 'Stress & burnout','Therapy', 'Couple Therapy'].map(tag => {
                                 const isSelected = focusAreaFilters.includes(tag);
                                 return (
                                     <span
                                         key={tag}
                                         onClick={() => toggleFocusArea(tag)}
-                                        style={{
-                                            background: isSelected ? '#0ea5e9' : 'white',
-                                            color: isSelected ? 'white' : '#333',
-                                            padding: '5px 10px',
-                                            borderRadius: '15px',
-                                            fontSize: '11px',
-                                            fontWeight: 'bold',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s',
-                                            border: isSelected ? '1px solid #0ea5e9' : '1px solid transparent'
-                                        }}>
+                                        style={{ background: isSelected ? '#0ea5e9' : 'white', color: isSelected ? 'white' : '#333', padding: '5px 10px', borderRadius: '15px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', transition: 'all 0.2s', border: isSelected ? '1px solid #0ea5e9' : '1px solid transparent' }}>
                                         {tag}
                                     </span>
                                 )
@@ -253,7 +250,6 @@ export default function BookingPage() {
                         </div>
                     </div>
 
-                    {/* DYNAMIC GENDER FILTER */}
                     <div>
                         <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Therapist gender</label>
                         <select
@@ -268,7 +264,6 @@ export default function BookingPage() {
                         </select>
                     </div>
 
-                    {/* DYNAMIC SESSION TYPE FILTER */}
                     <div>
                         <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Session type</label>
                         <select
@@ -283,20 +278,8 @@ export default function BookingPage() {
                             ))}
                         </select>
                     </div>
-
-                    {/* DATE RANGE */}
-                    <div>
-                        <label style={{ fontSize: '12px', opacity: 0.8, display: 'block', marginBottom: '8px' }}>Date range</label>
-                        <input
-                            type="text"
-                            placeholder="Next 7 days"
-                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.3)', background: 'transparent', fontSize: '14px', color: 'white', outline: 'none' }}
-                        />
-                    </div>
-
                 </div>
             </div>
-
 
             {/* ================= RIGHT COLUMN: LIST & CONFIRM ================= */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -332,7 +315,6 @@ export default function BookingPage() {
                                     height: '50px',
                                     borderRadius: '50%',
                                     background: '#ccc',
-                                    // Dynamically check for the backend image, fallback to placeholder
                                     backgroundImage: `url(${doctor.profile_image ? doctor.profile_image : '/medical-profile-default.png'})`,
                                     backgroundSize: 'cover',
                                     backgroundPosition: 'center'
@@ -345,20 +327,17 @@ export default function BookingPage() {
                                     </div>
                                     <p style={{ fontSize: '12px', color: '#666', margin: '0 0 10px 0', fontFamily: 'sans-serif' }}>Licensed therapist · {doctor.specialization || 'General Practice'}</p>
 
-                                    {/* DYNAMIC FOCUS AREA TAGS ON THE CARD */}
                                     <div style={{ display: 'flex', gap: '5px', marginBottom: '10px', flexWrap: 'wrap' }}>
                                         {(doctor.focus_areas && doctor.focus_areas.length > 0) ? (
                                             doctor.focus_areas.map((fa, index) => (
-                                                <span key={index} style={{ fontSize: '10px', border: '1px solid #ddd', padding: '2px 6px', borderRadius: '4px' }}>
-                                                    {fa}
-                                                </span>
+                                                <span key={index} style={{ fontSize: '10px', border: '1px solid #ddd', padding: '2px 6px', borderRadius: '4px' }}>{fa}</span>
                                             ))
                                         ) : (
                                             <span style={{ fontSize: '10px', border: '1px solid #ddd', padding: '2px 6px', borderRadius: '4px' }}>Therapy</span>
                                         )}
                                     </div>
 
-                                    <div style={{ fontSize: '11px', color: '#888', fontFamily: 'sans-serif' }}>Telehealth · 50 min · Rated 4.9/5</div>
+                                    <div style={{ fontSize: '11px', color: '#888', fontFamily: 'sans-serif' }}>Telehealth & In-Person · Rated 4.9/5</div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', alignItems: 'flex-end', minWidth: '150px' }}>
@@ -369,11 +348,7 @@ export default function BookingPage() {
                                                 <button
                                                     key={slot.id}
                                                     onClick={() => { setSelectedTherapist(doctor); setSelectedSlot(slot); }}
-                                                    style={{
-                                                        background: selectedSlot?.id === slot.id ? '#333' : 'white',
-                                                        color: selectedSlot?.id === slot.id ? 'white' : '#333',
-                                                        border: '1px solid #333', padding: '5px 10px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold'
-                                                    }}>
+                                                    style={{ background: selectedSlot?.id === slot.id ? '#333' : 'white', color: selectedSlot?.id === slot.id ? 'white' : '#333', border: '1px solid #333', padding: '5px 10px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
                                                     {formatShortDate(slot.date)} · {formatTime(slot.start_time)}
                                                 </button>
                                              ))}
@@ -386,11 +361,7 @@ export default function BookingPage() {
                                                             <button
                                                                 key={slot.id}
                                                                 onClick={() => { setSelectedTherapist(doctor); setSelectedSlot(slot); }}
-                                                                style={{
-                                                                    background: selectedSlot?.id === slot.id ? '#333' : 'transparent',
-                                                                    color: selectedSlot?.id === slot.id ? 'white' : '#333',
-                                                                    border: '1px solid #ccc', padding: '3px 8px', borderRadius: '15px', fontSize: '10px', cursor: 'pointer'
-                                                                }}>
+                                                                style={{ background: selectedSlot?.id === slot.id ? '#333' : 'transparent', color: selectedSlot?.id === slot.id ? 'white' : '#333', border: '1px solid #ccc', padding: '3px 8px', borderRadius: '15px', fontSize: '10px', cursor: 'pointer' }}>
                                                                 {formatShortDate(slot.date)} · {formatTime(slot.start_time)}
                                                             </button>
                                                         ))}
@@ -425,10 +396,50 @@ export default function BookingPage() {
                         </div>
                         <div>
                             <span style={{ background: 'white', color: '#333', padding: '5px 10px', borderRadius: '15px', fontSize: '12px', fontWeight: 'bold' }}>
-                                {availableServices.find(s => s.id == selectedServiceId)?.name || 'Telehealth'}
+                                {availableServices.find(s => s.id == selectedServiceId)?.name || 'Therapy'}
                             </span>
                         </div>
                     </div>
+
+                    {/* NEW: Format Selection Toggle */}
+                    <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', fontFamily: 'sans-serif' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                            <input
+                                type="radio"
+                                value="Online"
+                                checked={sessionFormat === 'Online'}
+                                onChange={() => setSessionFormat('Online')}
+                            />
+                            Telehealth (Online)
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
+                            <input
+                                type="radio"
+                                value="In-Person"
+                                checked={sessionFormat === 'In-Person'}
+                                onChange={() => setSessionFormat('In-Person')}
+                            />
+                            In-Person (Clinic)
+                        </label>
+                    </div>
+
+                    {/* NEW: Location Dropdown (Only shows if In-Person) */}
+                    {sessionFormat === 'In-Person' && (
+                        <div style={{ marginBottom: '20px', fontFamily: 'sans-serif' }}>
+                            <div style={{ opacity: 0.6, fontSize: '13px', marginBottom: '5px' }}>Select Clinic Location</div>
+                            <select
+                                value={selectedLocationId}
+                                onChange={(e) => setSelectedLocationId(e.target.value)}
+                                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.3)', background: 'transparent', fontSize: '14px', color: 'white', outline: 'none' }}
+                            >
+                                {locations.map(loc => (
+                                    <option key={loc.id} value={loc.id} style={{ color: '#333' }}>
+                                        {loc.name} - {loc.address}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', fontSize: '13px', fontFamily: 'sans-serif', marginBottom: '25px' }}>
                         <div>
@@ -437,29 +448,36 @@ export default function BookingPage() {
                                 {selectedSlot ? `${formatShortDate(selectedSlot.date)} · ${formatTime(selectedSlot.start_time)}` : '--'}
                             </div>
                         </div>
+
+                        {/* DYNAMIC: Session Link vs Room info */}
                         <div>
-                            <div style={{ opacity: 0.6, marginBottom: '3px' }}>Session link</div>
-                            <div>Secure video link will appear here</div>
+                            <div style={{ opacity: 0.6, marginBottom: '3px' }}>{sessionFormat === 'Online' ? 'Session link' : 'Check-in details'}</div>
+                            <div>{sessionFormat === 'Online' ? 'Secure video link will appear here' : 'Please arrive 10 minutes early'}</div>
                         </div>
 
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Reason for visit</div>
-                            <input 
-                                type="text" 
-                                placeholder="E.g., Anxiety & low mood check-in" 
+                            <input
+                                type="text"
+                                placeholder="E.g., Anxiety & low mood check-in"
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
-                                style={{ background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.5)', color: 'white', width: '100%', outline: 'none', ...sensitiveStyle }} 
+                                style={{ background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.5)', color: 'white', width: '100%', outline: 'none', ...sensitiveStyle }}
                             />
                         </div>
-                        
+
+                        {/* DYNAMIC: Location Summary */}
                         <div>
                             <div style={{ opacity: 0.6, marginBottom: '3px' }}>Location</div>
-                            <div>Online · Join from a private space</div>
+                            <div>
+                                {sessionFormat === 'Online'
+                                    ? 'Online · Join from a private space'
+                                    : locations.find(l => l.id == selectedLocationId)?.name || 'Clinic'}
+                            </div>
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'sans-serif' }}>
                          <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', opacity: 0.8, cursor: 'pointer' }}>
                              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
                              I agree to the 24-hour cancellation policy.
@@ -469,11 +487,11 @@ export default function BookingPage() {
                              <button onClick={() => {setSelectedSlot(null); setSelectedTherapist(null);}} style={{ background: 'transparent', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer' }}>Back to slots</button>
                              <button
                                 onClick={handleConfirmBooking}
-                                disabled={!selectedSlot || !agreed || !reason.trim()}
-                                style={{ 
-                                    background: 'white', color: '#333', border: 'none', padding: '10px 25px', borderRadius: '8px', 
-                                    fontWeight: 'bold', cursor: (!selectedSlot || !agreed || !reason.trim()) ? 'not-allowed' : 'pointer',
-                                    opacity: (!selectedSlot || !agreed || !reason.trim()) ? 0.5 : 1
+                                disabled={!selectedSlot || !agreed || !reason.trim() || (sessionFormat === 'In-Person' && !selectedLocationId)}
+                                style={{
+                                    background: 'white', color: '#333', border: 'none', padding: '10px 25px', borderRadius: '8px',
+                                    fontWeight: 'bold', cursor: (!selectedSlot || !agreed || !reason.trim() || (sessionFormat === 'In-Person' && !selectedLocationId)) ? 'not-allowed' : 'pointer',
+                                    opacity: (!selectedSlot || !agreed || !reason.trim() || (sessionFormat === 'In-Person' && !selectedLocationId)) ? 0.5 : 1
                                 }}>
                                 ✔ Confirm booking
                              </button>

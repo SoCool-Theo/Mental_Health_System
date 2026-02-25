@@ -30,11 +30,17 @@ class CurrentUserView(APIView):
         if is_therapist:
             profile = user.therapist_profile
             image_url = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+            focus_string = ', '.join(profile.focus_areas) if profile.focus_areas else ''
+
             profile_data = {
                 'specialty': profile.specialization,
+                'focus_areas': focus_string,
                 'bio': profile.bio,
                 'profile_image': image_url,
-                'license_no': profile.license_number
+                'license_no': profile.license_number,
+                'phone': user.phone_number,
+                'dob': profile.date_of_birth,
+                'gender': getattr(profile, 'gender', 'Prefer not to say')
             }
         elif is_patient:
             # --- NEW: ADD PATIENT DATA TO RESPONSE ---
@@ -55,6 +61,15 @@ class CurrentUserView(APIView):
             'first_name': user.first_name,
             'last_name': user.last_name,
             'display_name': display_name,
+            'is_superuser': user.is_superuser,
+            'is_staff': user.is_staff,
+
+            'role': (
+                'admin' if user.is_superuser
+                else 'doctor' if user.is_staff
+                else 'patient'
+            ),
+
             'is_therapist': is_therapist,
             'is_patient': is_patient,
             **profile_data
@@ -76,6 +91,13 @@ class CurrentUserView(APIView):
             profile = user.therapist_profile
             if 'specialty' in data: profile.specialization = data['specialty']
             if 'bio' in data: profile.bio = data['bio']
+            if 'dob' in data: profile.date_of_birth = data['dob']
+            if 'gender' in data: profile.gender = data['gender']
+
+            if 'focus_areas' in data:
+                raw_string = data['focus_areas']
+                # Splits by comma and removes extra spaces: Turns "Anxiety, Stress" into ['Anxiety', 'Stress']
+                profile.focus_areas = [f.strip() for f in raw_string.split(',') if f.strip()]
 
             # Handle Therapist Image Upload
             if 'profile_image' in request.FILES:
@@ -148,3 +170,77 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({"message": "Password updated successfully."}, status=status.HTTP_200_OK)
+
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+
+class PatientListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Security Check
+        if not hasattr(user, 'therapist_profile'):
+            return Response({"error": "Only therapists can view assigned patients."}, status=status.HTTP_403_FORBIDDEN)
+
+        # --- THE PATIENT FILTER ---
+        # Uses 'patient_profile__appointments' because your patient ForeignKey has related_name='appointments'
+        patients = User.objects.filter(
+            patient_profile__isnull=False,
+            patient_profile__appointments__therapist=user.therapist_profile
+        ).distinct()
+
+        contact_list = []
+        for patient in patients:
+            profile = patient.patient_profile
+            image_url = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+
+            contact_list.append({
+                'id': patient.id,
+                'name': f"{patient.first_name} {patient.last_name}".strip() or patient.username,
+                'img': image_url,
+                'tag': 'Patient',
+                'lastMsg': 'Click to view conversation...',
+                'unread': 0,
+                'time': ''
+            })
+
+        return Response(contact_list, status=status.HTTP_200_OK)
+
+
+class DoctorListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Security Check
+        if not hasattr(user, 'patient_profile'):
+            return Response({"error": "Only patients can view assigned doctors."}, status=status.HTTP_403_FORBIDDEN)
+
+        # --- THE DOCTOR FILTER ---
+        # Uses 'therapist_profile__schedule' because your therapist ForeignKey has related_name='schedule'
+        doctors = User.objects.filter(
+            therapist_profile__isnull=False,
+            therapist_profile__schedule__patient=user.patient_profile
+        ).distinct()
+
+        contact_list = []
+        for doctor in doctors:
+            profile = doctor.therapist_profile
+            image_url = request.build_absolute_uri(profile.profile_image.url) if profile.profile_image else None
+
+            contact_list.append({
+                'id': doctor.id,
+                'name': f"Dr. {doctor.first_name} {doctor.last_name}".strip() or f"Dr. {doctor.username}",
+                'img': image_url,
+                'tag': profile.specialization or 'Therapist',
+                'lastMsg': 'Click to view conversation...',
+                'unread': 0,
+                'time': ''
+            })
+
+        return Response(contact_list, status=status.HTTP_200_OK)
