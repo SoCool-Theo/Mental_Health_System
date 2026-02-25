@@ -14,7 +14,6 @@ from datetime import timedelta
 from django.db.models import Count
 from .models import Appointment, Service
 
-from rest_framework import viewsets
 from .models import Location
 from .serializers import LocationSerializer
 

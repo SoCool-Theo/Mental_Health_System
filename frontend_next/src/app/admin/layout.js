@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation'; // Added useRouter
+import { usePathname, useRouter } from 'next/navigation';
 import '../styles/AdminDashboard.css'; 
 
 export default function AdminLayout({ children }) {
