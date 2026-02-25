@@ -24,13 +24,17 @@ export default function DoctorLayout({ children }) {
             });
 
             setDoctorName(response.data.display_name);
-            // --- IMAGE LOGIC ---
+
+            // --- DYNAMIC IMAGE LOGIC ---
             if (response.data.profile_image) {
                 let imgUrl = response.data.profile_image;
 
-                // If Django sends a relative URL, attach the backend host manually
+                // Grab the URL from your .env file, fallback to localhost
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
+                // If Django sends a relative URL, attach the dynamic backend host
                 if (imgUrl.startsWith('/')) {
-                    imgUrl = `http://localhost:8000${imgUrl}`;
+                    imgUrl = `${backendUrl}${imgUrl}`;
                 }
 
                 setDoctorAvatar(imgUrl);
@@ -51,12 +55,12 @@ export default function DoctorLayout({ children }) {
   return (
     <div className="dashboard-container">
       <div className="app-shell">
-        
+
         {/* SIDEBAR */}
         <div className="sidebar">
           <div className="sidebar-header">Main Navigation</div>
           <div className="sidebar-nav">
-            
+
             <Link href="/doctor/schedule" style={{textDecoration: 'none'}}>
                 <div className={`sidebar-item ${pathname === '/doctor/schedule' ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:calendar-days" style={{fontSize: '18px'}}></iconify-icon>
@@ -64,7 +68,6 @@ export default function DoctorLayout({ children }) {
                 </div>
             </Link>
 
-            {/* --- NEW AVAILABILITY LINK --- */}
             <Link href="/doctor/availability" style={{textDecoration: 'none'}}>
                 <div className={`sidebar-item ${pathname === '/doctor/availability' ? 'sidebar-item-active' : ''}`}>
                     <iconify-icon icon="lucide:clock" style={{fontSize: '18px'}}></iconify-icon>

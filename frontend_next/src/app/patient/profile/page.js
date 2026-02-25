@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../../api';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -33,27 +34,26 @@ export default function ProfilePage() {
 
         try {
             const headers = { 'Authorization': `Bearer ${token}` };
-            const response = await fetch('http://localhost:8000/api/users/me/', { headers });
 
-            if (response.ok) {
-                const data = await response.json();
+            const response = await api.get('users/me/', { headers });
+            const data = response.data;
 
-                setFormData({
-                    fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
-                    email: data.email || '',
-                    phone: data.phone || '',
-                    dob: data.dob || '',
-                    gender: data.gender || 'Prefer not to say',
-                    address: data.address || ''
-                });
+            setFormData({
+                fullName: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+                email: data.email || '',
+                phone: data.phone || '',
+                dob: data.dob || '',
+                gender: data.gender || 'Prefer not to say',
+                address: data.address || ''
+            });
 
-                // Load existing profile image if they have one
-                if (data.profile_image) {
-                    const imgUrl = data.profile_image.startsWith('http')
-                        ? data.profile_image
-                        : `http://localhost:8000${data.profile_image}`;
-                    setImagePreview(imgUrl);
-                }
+            // --- DYNAMIC IMAGE URL ---
+            if (data.profile_image) {
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+                const imgUrl = data.profile_image.startsWith('http')
+                    ? data.profile_image
+                    : `${backendUrl}${data.profile_image}`;
+                setImagePreview(imgUrl);
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
@@ -111,23 +111,18 @@ export default function ProfilePage() {
     }
 
     try {
-        const response = await fetch('http://localhost:8000/api/users/me/', {
-            method: 'PATCH',
-            headers,
-            body: payload // Send the FormData object
-        });
+        await api.patch('users/me/', payload, { headers });
 
-        if (response.ok) {
-            alert("Profile updated successfully!");
-            // Optional: refresh the page to sync the top navbar image instantly
-            window.location.reload();
-        } else {
-            const errorData = await response.json();
-            console.error("Save error:", errorData);
-            alert("Failed to update profile.");
-        }
+        alert("Profile updated successfully!");
+        // Optional: refresh the page to sync the top navbar image instantly
+        window.location.reload();
     } catch (error) {
-        console.error("Network error:", error);
+        if (error.response) {
+            console.error("Save error:", error.response.data);
+            alert("Failed to update profile.");
+        } else {
+            console.error("Network error:", error);
+        }
     } finally {
         setIsSubmitting(false);
     }

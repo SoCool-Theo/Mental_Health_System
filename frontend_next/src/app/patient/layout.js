@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation'; // <-- ADDED usePathname
+import { useRouter, usePathname } from 'next/navigation';
 import api from '../../api';
 import styles from './patient_dashboard.module.css';
 
@@ -54,13 +54,15 @@ export default function PatientLayout({ children }) {
       };
   };
 
-  // --- HELPER FUNCTION FOR PROFILE IMAGE ---
+  // --- DYNAMIC PROFILE IMAGE HELPER ---
   const getProfileImage = () => {
       if (user && user.profile_image) {
-          // If Django sends a relative URL, attach localhost:8000 to it
+          // Grab the URL from your .env file, fallback to localhost if it's missing
+          const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+
           return user.profile_image.startsWith('http')
               ? user.profile_image
-              : `http://localhost:8000${user.profile_image}`;
+              : `${backendUrl}${user.profile_image}`;
       }
       return "https://i.pravatar.cc/150?img=12"; // Fallback image
   };
@@ -119,7 +121,7 @@ export default function PatientLayout({ children }) {
                       onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                   >
                       <img
-                          src={getProfileImage()} // <-- USING THE HELPER HERE
+                          src={getProfileImage()} // <-- USING THE DYNAMIC HELPER
                           alt="Profile"
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                       />
@@ -143,7 +145,7 @@ export default function PatientLayout({ children }) {
                               overflow: 'hidden', marginBottom: '15px', border: '2px solid white'
                           }}>
                               <img
-                                  src={getProfileImage()} // <-- USING THE HELPER HERE
+                                  src={getProfileImage()} // <-- USING THE DYNAMIC HELPER
                                   alt="Profile"
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                               />

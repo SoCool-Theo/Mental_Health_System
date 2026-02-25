@@ -141,7 +141,7 @@ export default function EditTherapistPage() {
             <div style={{ fontSize: '12px', color: '#666' }}>Administrator</div>
           </div>
           <img
-              src={adminUser?.profile_image ? `http://localhost:8000${adminUser.profile_image}` : "/medical-profile-default.png"}
+              src={adminUser?.profile_image ? `http://100.112.34:8000${adminUser.profile_image}` : "/medical-profile-default.png"}
               alt="Admin"
               style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', background: '#e2e8f0' }}
               onError={(e) => { e.target.src = '/medical-profile-default.png'; }}

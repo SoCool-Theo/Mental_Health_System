@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import api from '../../../api';
 
 export default function ConfigurationsLayout({ children }) {
   const pathname = usePathname();
@@ -21,21 +22,19 @@ export default function ConfigurationsLayout({ children }) {
       if (!token) return;
 
       try {
-        const response = await fetch('http://localhost:8000/api/users/me/', {
+        const response = await api.get('users/me/', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          const fullName = `${data.first_name} ${data.last_name}`.trim() || data.username;
+        const data = response.data;
+        const fullName = `${data.first_name} ${data.last_name}`.trim() || data.username;
 
-          setAdminData({
-            name: fullName,
-            role: 'Administrator',
-            // NEW: Grab the profile image if the backend provides it
-            profileImage: data.profile_image || null
-          });
-        }
+        setAdminData({
+          name: fullName,
+          role: 'Administrator',
+          // NEW: Grab the profile image if the backend provides it
+          profileImage: data.profile_image || null
+        });
       } catch (error) {
         console.error("Failed to fetch admin info:", error);
         setAdminData({ name: 'Admin User', role: 'Admin', profileImage: null });

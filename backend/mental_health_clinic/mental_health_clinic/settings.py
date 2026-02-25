@@ -133,7 +133,8 @@ AUTH_USER_MODEL = 'users.User'
 #CORs Configuration
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3000",
+    "http://100.103.26.100:3000"
 ]
 
 # Django Rest Framework Configuration
@@ -149,7 +150,7 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # User stays logged in for 1 hour
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # User stays logged in for 1 hour
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # They can refresh their session for 1 day
 }
 

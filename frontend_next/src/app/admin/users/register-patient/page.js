@@ -103,6 +103,16 @@ export default function RegisterPatientPage() {
 
   if (loadingData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading form...</div>;
 
+  // --- DYNAMIC PROFILE IMAGE HELPER ---
+  const getAdminAvatar = () => {
+      if (!adminUser?.profile_image) return "/medical-profile-default.png";
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      return adminUser.profile_image.startsWith('http')
+          ? adminUser.profile_image
+          : `${backendUrl}${adminUser.profile_image}`;
+  };
+
   return (
     <>
       <div className="header-card">
@@ -115,7 +125,7 @@ export default function RegisterPatientPage() {
             <div style={{ fontSize: '12px', color: '#666' }}>Administrator</div>
           </div>
           <img
-              src={adminUser?.profile_image ? `http://localhost:8000${adminUser.profile_image}` : "/medical-profile-default.png"}
+              src={getAdminAvatar()} // <-- USING THE DYNAMIC HELPER
               alt="Admin"
               style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', background: '#e2e8f0' }}
               onError={(e) => { e.target.src = '/medical-profile-default.png'; }}

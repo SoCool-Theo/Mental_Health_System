@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 
@@ -54,6 +55,35 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             serializer.save(patient=self.request.user.patient_profile)
         else:
             raise ValidationError({"detail": "Only patients can book appointments."})
+
+    @action(detail=True, methods=['post'], url_path='cancel')
+    def cancel(self, request, pk=None):
+        """
+        Custom action: POST /api/appointments/{id}/cancel/
+        Allows a patient to cancel their own appointment,
+        or an admin/therapist to cancel any appointment they can see.
+        """
+        appointment = self.get_object()
+
+        # Prevent cancelling an already-cancelled appointment
+        if appointment.status == Appointment.Status.CANCELLED:
+            return Response(
+                {"detail": "This appointment is already cancelled."},
+                status=400
+            )
+
+        # Prevent cancelling a completed appointment
+        if appointment.status == Appointment.Status.COMPLETED:
+            return Response(
+                {"detail": "Cannot cancel a completed appointment."},
+                status=400
+            )
+
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save()
+
+        serializer = self.get_serializer(appointment)
+        return Response(serializer.data)
 
 class ServiceViewSet(viewsets.ModelViewSet):
     queryset = Service.objects.all()

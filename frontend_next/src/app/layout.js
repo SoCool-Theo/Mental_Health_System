@@ -19,8 +19,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" data-theme="light" style={{ colorScheme: 'light' }}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
         {children}
         {/* Load Iconify for the whole app */}
         <Script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" strategy="lazyOnload" />

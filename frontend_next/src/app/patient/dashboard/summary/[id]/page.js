@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation'; 
-import styles from '../../../patient_dashboard.module.css'; 
+import api from '../../../../../api';
+import styles from '../../../patient_dashboard.module.css';
 
 export default function SessionSummaryPage() {
   const router = useRouter();
@@ -25,21 +26,26 @@ export default function SessionSummaryPage() {
 
     const fetchSummary = async () => {
       const token = localStorage.getItem('access_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
       try {
-        const res = await fetch(`http://localhost:8000/api/appointments/${appointmentId}/`, {
+        const res = await api.get(`appointments/${appointmentId}/`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-        
-        if (res.ok) {
-            const data = await res.json();
-            setAppointment(data);
-        } else {
-            console.error("Failed to fetch appointment");
-            alert("Could not load summary. Please try again.");
-            router.push('/patient/dashboard');
-        }
+        setAppointment(res.data);
       } catch (error) {
-        console.error("Network error:", error);
+        console.error("Failed to fetch appointment:", error);
+        if (error.response?.status === 404) {
+          alert("Appointment not found.");
+        } else if (error.response?.status === 403) {
+          alert("You don't have permission to view this appointment.");
+        } else {
+          alert("Could not load summary. Please try again.");
+        }
+        router.push('/patient/dashboard');
       } finally {
         setLoading(false);
       }

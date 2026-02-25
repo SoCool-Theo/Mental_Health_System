@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '../../api';
 import '../styles/Login.css';
 
 export default function RegisterPage() {
@@ -94,27 +95,22 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/users/register/', {
-        method: 'POST',
-        body: submitData,
-      });
+      const response = await api.post('users/register/', submitData);
 
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(`${role === 'PATIENT' ? 'Patient' : 'Doctor'} Registration Successful! Please log in.`);
-        router.push('/login');
-      } else {
-        console.error("Registration errors:", data);
+      alert(`${role === 'PATIENT' ? 'Patient' : 'Doctor'} Registration Successful! Please log in.`);
+      router.push('/login');
+    } catch (error) {
+      if (error.response) {
+        console.error("Registration errors:", error.response.data);
         let errorMessage = "Registration failed:\n";
-        for (const key in data) {
-           errorMessage += `- ${key}: ${data[key]}\n`;
+        for (const key in error.response.data) {
+           errorMessage += `- ${key}: ${error.response.data[key]}\n`;
         }
         alert(errorMessage);
+      } else {
+        console.error("Network error:", error);
+        alert("Network error. Please make sure the backend server is running.");
       }
-    } catch (error) {
-      console.error("Network error:", error);
-      alert("Network error. Please make sure the backend server is running.");
     } finally {
       setLoading(false);
     }

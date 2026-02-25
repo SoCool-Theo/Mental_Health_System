@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '../patient_dashboard.module.css'; 
+import api from '../../../api';
+import styles from '../patient_dashboard.module.css';
 
 export default function BookingPage() {
   const router = useRouter();
@@ -51,10 +52,11 @@ export default function BookingPage() {
         const headers = { 'Authorization': `Bearer ${token}` };
 
         try {
+            const config = { headers };
+
             // Fetch Therapists
-            const docRes = await fetch('http://localhost:8000/api/users/therapists/', { headers });
-            const docData = await docRes.json();
-            const therapistList = docData.results || docData;
+            const docRes = await api.get('users/therapists/', config);
+            const therapistList = docRes.data.results || docRes.data;
             setTherapists(therapistList);
 
             // Extract specialties
@@ -64,43 +66,37 @@ export default function BookingPage() {
             // Fetch Availabilities
             const availMap = {};
             for (let doc of therapistList) {
-                const availRes = await fetch(`http://localhost:8000/api/availability/?therapist_id=${doc.user.id}`, { headers });
-                if (availRes.ok) {
-                    const availData = await availRes.json();
-                    availMap[doc.user.id] = availData.results || availData;
-                }
+                try {
+                    const availRes = await api.get(`availability/?therapist_id=${doc.user.id}`, config);
+                    availMap[doc.user.id] = availRes.data.results || availRes.data;
+                } catch (e) { /* skip if unavailable */ }
             }
             setAvailabilities(availMap);
 
             // Fetch Services
-            const serviceRes = await fetch('http://localhost:8000/api/services/', { headers });
-            if (serviceRes.ok) {
-                const serviceData = await serviceRes.json();
-                const services = serviceData.results || serviceData;
+            try {
+                const serviceRes = await api.get('services/', config);
+                const services = serviceRes.data.results || serviceRes.data;
                 setAvailableServices(services);
                 if (services.length > 0) setSelectedServiceId(services[0].id);
-            }
+            } catch (e) { /* skip */ }
 
-            // NEW: Fetch Clinic Locations
-            const locRes = await fetch('http://localhost:8000/api/locations/', { headers });
-            if (locRes.ok) {
-                const locData = await locRes.json();
-                const activeLocations = (locData.results || locData).filter(loc => loc.is_active);
+            // Fetch Clinic Locations
+            try {
+                const locRes = await api.get('locations/', config);
+                const activeLocations = (locRes.data.results || locRes.data).filter(loc => loc.is_active);
                 setLocations(activeLocations);
                 if (activeLocations.length > 0) setSelectedLocationId(activeLocations[0].id);
-            }
+            } catch (e) { /* skip */ }
 
             // Fetch Patient Profile
-            const userRes = await fetch('http://localhost:8000/api/users/me/', { headers });
-            if (userRes.ok) {
-                const userData = await userRes.json();
-                const profileRes = await fetch(`http://localhost:8000/api/patients/?user=${userData.id}`, { headers });
-                if (profileRes.ok) {
-                    const profileData = await profileRes.json();
-                    const profiles = profileData.results || profileData;
-                    if (profiles.length > 0) setPatientProfileId(profiles[0].id);
-                }
-            }
+            try {
+                const userRes = await api.get('users/me/', config);
+                const userData = userRes.data;
+                const profileRes = await api.get(`patients/?user=${userData.id}`, config);
+                const profiles = profileRes.data.results || profileRes.data;
+                if (profiles.length > 0) setPatientProfileId(profiles[0].id);
+            } catch (e) { /* skip */ }
         } catch (error) {
             console.error("Error fetching data:", error);
         } finally {
@@ -164,25 +160,24 @@ export default function BookingPage() {
     };
 
     try {
-        const response = await fetch('http://localhost:8000/api/appointments/', {
-            method: 'POST',
+        const response = await api.post('appointments/', payload, {
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
+            }
         });
 
-        if (response.ok) {
+        if (response.status >= 200 && response.status < 300) {
             router.push('/patient/dashboard');
-        } else {
-            const errorData = await response.json();
-            console.error("Booking failed. Django says:", errorData);
-            alert("Failed to confirm booking: " + JSON.stringify(errorData));
         }
     } catch (error) {
-        console.error("Network error:", error);
-        alert("Network error. Is your Docker WSL backend running?");
+        if (error.response) {
+            console.error("Booking failed. Django says:", error.response.data);
+            alert("Failed to confirm booking: " + JSON.stringify(error.response.data));
+        } else {
+            console.error("Network error:", error);
+            alert("Network error. Is your Docker WSL backend running?");
+        }
     }
   };
 

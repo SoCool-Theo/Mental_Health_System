@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import styles from '../patient_dashboard.module.css'; 
+import api from '../../../api';
+import styles from '../patient_dashboard.module.css';
 
 // --- REUSABLE HOVER BUTTON COMPONENT ---
 const HoverButton = ({ children, onClick, style, hoverStyle, disabled }) => {
@@ -39,6 +40,7 @@ export default function PatientDashboard() {
   const [nextAppt, setNextAppt] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
 
   const sensitiveStyle = {
     filter: privacyMode ? 'blur(4px)' : 'none', 
@@ -57,37 +59,29 @@ export default function PatientDashboard() {
         }
 
         try {
+            const config = { headers: { 'Authorization': `Bearer ${token}` } };
+
             // 1. Fetch User Info (for "Welcome Back, Joe!")
-            const userRes = await fetch('http://localhost:8000/api/users/me/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (userRes.ok) {
-                const userData = await userRes.json();
-                setUserName(userData.first_name || userData.username);
-            }
+            const userRes = await api.get('users/me/', config);
+            setUserName(userRes.data.first_name || userRes.data.username);
 
             // 2. Fetch Appointments
-            const apptRes = await fetch('http://localhost:8000/api/appointments/', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (apptRes.ok) {
-                const apptData = await apptRes.json();
-                const now = new Date();
+            const apptRes = await api.get('appointments/', config);
+            const apptData = apptRes.data;
+            const now = new Date();
 
-                // Sort and Filter: Upcoming Appointments
-                const upcoming = apptData
-                    .filter(a => new Date(a.start_time) >= now && a.status !== 'CANCELLED')
-                    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+            // Sort and Filter: Upcoming Appointments
+            const upcoming = apptData
+                .filter(a => new Date(a.start_time) >= now && a.status !== 'CANCELLED')
+                .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
 
-                // Sort and Filter: Past/Completed Appointments
-                const past = apptData
-                    .filter(a => new Date(a.start_time) < now || a.status === 'COMPLETED')
-                    .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+            // Sort and Filter: Past/Completed Appointments
+            const past = apptData
+                .filter(a => new Date(a.start_time) < now || a.status === 'COMPLETED')
+                .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
 
-                if (upcoming.length > 0) setNextAppt(upcoming[0]);
-                setHistory(past);
-            }
+            if (upcoming.length > 0) setNextAppt(upcoming[0]);
+            setHistory(past);
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
         } finally {
@@ -97,6 +91,52 @@ export default function PatientDashboard() {
 
     fetchDashboardData();
   }, [router]);
+
+  // --- CANCEL APPOINTMENT ---
+  const handleCancelAppointment = async (appointmentId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this appointment?\n\nThis action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    setCancelling(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      await api.post(`appointments/${appointmentId}/cancel/`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      // Move the cancelled appointment out of "next" and refresh the view
+      setNextAppt(null);
+      // Re-fetch to get fresh data
+      const config = { headers: { 'Authorization': `Bearer ${token}` } };
+      const apptRes = await api.get('appointments/', config);
+      const apptData = apptRes.data;
+      const now = new Date();
+
+      const upcoming = apptData
+        .filter(a => new Date(a.start_time) >= now && a.status !== 'CANCELLED')
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+
+      const past = apptData
+        .filter(a => new Date(a.start_time) < now || a.status === 'COMPLETED' || a.status === 'CANCELLED')
+        .sort((a, b) => new Date(b.start_time) - new Date(a.start_time));
+
+      if (upcoming.length > 0) setNextAppt(upcoming[0]);
+      setHistory(past);
+
+      alert("Appointment cancelled successfully.");
+    } catch (error) {
+      console.error("Cancel failed:", error);
+      if (error.response?.data?.detail) {
+        alert(error.response.data.detail);
+      } else {
+        alert("Failed to cancel appointment. Please try again.");
+      }
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   // --- HELPER FORMATTING FUNCTIONS ---
   const formatFullDate = (isoString) => {
@@ -199,10 +239,12 @@ export default function PatientDashboard() {
                                     Reschedule
                                 </HoverButton>
                                 <HoverButton 
+                                    onClick={() => handleCancelAppointment(nextAppt.id)}
+                                    disabled={cancelling}
                                     style={{ padding: '10px 20px', background: '#ef4444', color: 'white' }}
                                     hoverStyle={{ background: '#dc2626' }}
                                 >
-                                    Cancel
+                                    {cancelling ? 'Cancelling...' : 'Cancel'}
                                 </HoverButton>
                             </div>
                         </div>

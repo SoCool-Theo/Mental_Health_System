@@ -134,6 +134,16 @@ export default function EditPatientPage() {
 
   if (loadingData) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading patient profile...</div>;
 
+  // --- DYNAMIC PROFILE IMAGE HELPER ---
+  const getAdminAvatar = () => {
+      if (!adminUser?.profile_image) return "/medical-profile-default.png";
+
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      return adminUser.profile_image.startsWith('http')
+          ? adminUser.profile_image
+          : `${backendUrl}${adminUser.profile_image}`;
+  };
+
   return (
     <>
       {/* --- PAGE HEADER --- */}
@@ -147,7 +157,7 @@ export default function EditPatientPage() {
             <div style={{ fontSize: '12px', color: '#666' }}>Administrator</div>
           </div>
           <img
-              src={adminUser?.profile_image ? `http://localhost:8000${adminUser.profile_image}` : "/medical-profile-default.png"}
+              src={getAdminAvatar()} // <-- USING THE DYNAMIC HELPER
               alt="Admin"
               style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', background: '#e2e8f0' }}
               onError={(e) => { e.target.src = '/medical-profile-default.png'; }}
@@ -279,11 +289,11 @@ export default function EditPatientPage() {
                 >
                     {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
-                <button 
+                <button
                     type="button" onClick={() => router.back()}
                     onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)}
-                    style={{ 
-                        background: cancelHover ? '#f5f5f5' : 'white', color: '#555', border: '1px solid #ccc', 
+                    style={{
+                        background: cancelHover ? '#f5f5f5' : 'white', color: '#555', border: '1px solid #ccc',
                         padding: '12px 25px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px',
                         transition: 'all 0.2s'
                     }}
