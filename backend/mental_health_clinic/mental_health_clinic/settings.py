@@ -134,8 +134,11 @@ AUTH_USER_MODEL = 'users.User'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://100.103.26.100:3000"
 ]
+
+_extra_origins = os.getenv("CORS_EXTRA_ORIGINS", "")
+if _extra_origins:
+    CORS_ALLOWED_ORIGINS += [origin.strip() for origin in _extra_origins.split(",") if origin.strip()]
 
 # Django Rest Framework Configuration
 REST_FRAMEWORK = {
@@ -150,12 +153,12 @@ REST_FRAMEWORK = {
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # User stays logged in for 1 hour
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # They can refresh their session for 1 day
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }
 
 # Security settings
-SECURE_CONTENT_TYPE_NOSNIFF = True  # Fixes "X-Content-Type-Options" alert
+SECURE_CONTENT_TYPE_NOSNIFF = True
 
 # Media files (Uploaded by users)
 MEDIA_URL = '/media/'
