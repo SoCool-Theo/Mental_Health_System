@@ -17,6 +17,7 @@ export default function EditPatientPage() {
   const [therapists, setTherapists] = useState([]);
   const [loadingData, setLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     firstName: '',
@@ -45,7 +46,9 @@ export default function EditPatientPage() {
             ]);
 
             setAdminUser(meRes.data);
-            setTherapists(therapistsRes.data.results || therapistsRes.data);
+
+            const therapistList = therapistsRes.data.results || therapistsRes.data;
+            setTherapists(Array.isArray(therapistList) ? therapistList : []);
 
             const patientData = patientRes.data;
 
@@ -62,7 +65,13 @@ export default function EditPatientPage() {
 
         } catch (error) {
             console.error("Failed to load patient data:", error);
-            alert("Could not load patient details. They may have been deleted.");
+            if (error.response?.status === 404) {
+                alert("Patient not found. They may have been deleted.");
+            } else if (error.response?.status === 403) {
+                alert("You don't have permission to edit this patient.");
+            } else {
+                alert("Could not load patient details. Please try again.");
+            }
             router.push('/admin/users');
         } finally {
             setLoadingData(false);
@@ -76,27 +85,43 @@ export default function EditPatientPage() {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (errors[e.target.name]) {
+      setErrors({ ...errors, [e.target.name]: null });
+    }
+  };
+
+  // --- CLIENT-SIDE VALIDATION ---
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
+    if (formData.dob) {
+      const dobDate = new Date(formData.dob);
+      if (dobDate > new Date()) newErrors.dob = 'Date of birth cannot be in the future';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   // --- 2. HANDLE UPDATE ---
   const handleSave = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) return;
+
     setIsSubmitting(true);
 
     try {
         const token = localStorage.getItem('access_token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        // Construct payload. Note: Adjust this based on how your backend expects nested user updates
+        // Flat payload — first_name/last_name are top-level write_only fields on the serializer
         const updatePayload = {
-            user: {
-                first_name: formData.firstName,
-                last_name: formData.lastName,
-                email: formData.email
-            },
-            date_of_birth: formData.dob,
+            first_name: formData.firstName.trim(),
+            last_name: formData.lastName.trim(),
+            date_of_birth: formData.dob || null,
             plan: formData.plan,
-            therapist: formData.assignedTherapist || null, // Handle unassigned
+            therapist: formData.assignedTherapist || null,
             status: formData.status
         };
 
@@ -107,7 +132,24 @@ export default function EditPatientPage() {
 
     } catch (error) {
         console.error("Update failed:", error);
-        alert("Failed to update patient. Please check your network or inputs.");
+
+        if (error.response?.data) {
+            const backendErrors = error.response.data;
+            const fieldErrors = {};
+
+            if (backendErrors.first_name) fieldErrors.firstName = Array.isArray(backendErrors.first_name) ? backendErrors.first_name.join(', ') : backendErrors.first_name;
+            if (backendErrors.last_name) fieldErrors.lastName = Array.isArray(backendErrors.last_name) ? backendErrors.last_name.join(', ') : backendErrors.last_name;
+            if (backendErrors.date_of_birth) fieldErrors.dob = Array.isArray(backendErrors.date_of_birth) ? backendErrors.date_of_birth.join(', ') : backendErrors.date_of_birth;
+            if (backendErrors.therapist) fieldErrors.assignedTherapist = Array.isArray(backendErrors.therapist) ? backendErrors.therapist.join(', ') : backendErrors.therapist;
+
+            if (Object.keys(fieldErrors).length > 0) {
+                setErrors(fieldErrors);
+            } else {
+                alert(backendErrors.detail || JSON.stringify(backendErrors) || "Failed to update patient.");
+            }
+        } else {
+            alert("Network error. Please try again.");
+        }
     } finally {
         setIsSubmitting(false);
     }
@@ -128,7 +170,7 @@ export default function EditPatientPage() {
           router.push('/admin/users');
       } catch (error) {
           console.error("Archive failed", error);
-          alert("Failed to archive patient.");
+          alert(error.response?.data?.detail || "Failed to archive patient.");
       }
   };
 
@@ -153,7 +195,7 @@ export default function EditPatientPage() {
         </h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{adminUser?.display_name || 'Admin'}</div>
+            <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{adminUser?.display_name || `${adminUser?.first_name || ''} ${adminUser?.last_name || ''}`.trim() || 'Admin'}</div>
             <div style={{ fontSize: '12px', color: '#666' }}>Administrator</div>
           </div>
           <img
@@ -197,16 +239,18 @@ export default function EditPatientPage() {
                     <input
                         type="text" name="firstName" required
                         value={formData.firstName} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${errors.firstName ? '#dc2626' : '#ccc'}`, fontSize: '14px', outline: 'none' }}
                     />
+                    {errors.firstName && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.firstName}</span>}
                 </div>
                 <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Last Name</label>
                     <input
                         type="text" name="lastName" required
                         value={formData.lastName} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${errors.lastName ? '#dc2626' : '#ccc'}`, fontSize: '14px', outline: 'none' }}
                     />
+                    {errors.lastName && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.lastName}</span>}
                 </div>
             </div>
 
@@ -226,8 +270,9 @@ export default function EditPatientPage() {
                     <input
                         type="date" name="dob"
                         value={formData.dob} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', color: '#555' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${errors.dob ? '#dc2626' : '#ccc'}`, fontSize: '14px', outline: 'none', color: '#555' }}
                     />
+                    {errors.dob && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.dob}</span>}
                 </div>
             </div>
 
@@ -250,15 +295,16 @@ export default function EditPatientPage() {
                     <select
                         name="assignedTherapist"
                         value={formData.assignedTherapist} onChange={handleChange}
-                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ccc', fontSize: '14px', outline: 'none', background: 'white' }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${errors.assignedTherapist ? '#dc2626' : '#ccc'}`, fontSize: '14px', outline: 'none', background: 'white' }}
                     >
                         <option value="">-- Unassigned --</option>
                         {therapists.map(doc => (
                             <option key={doc.id} value={doc.id}>
-                                Dr. {doc.user?.first_name} {doc.user?.last_name}
+                                Dr. {doc.user?.first_name || doc.first_name || ''} {doc.user?.last_name || doc.last_name || ''}
                             </option>
                         ))}
                     </select>
+                    {errors.assignedTherapist && <span style={{ color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' }}>{errors.assignedTherapist}</span>}
                 </div>
                 <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#444' }}>Account Status</label>
@@ -290,7 +336,7 @@ export default function EditPatientPage() {
                     {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
                 <button
-                    type="button" onClick={() => router.back()}
+                    type="button" onClick={() => router.push('/admin/users')}
                     onMouseEnter={() => setCancelHover(true)} onMouseLeave={() => setCancelHover(false)}
                     style={{
                         background: cancelHover ? '#f5f5f5' : 'white', color: '#555', border: '1px solid #ccc',

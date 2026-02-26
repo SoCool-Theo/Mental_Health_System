@@ -27,35 +27,62 @@ class UserSerializer(serializers.ModelSerializer):
 class PatientProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
+    # Accept nested user writes via separate fields
+    first_name = serializers.CharField(write_only=True, required=False)
+    last_name = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = PatientProfile
-        fields = ['id', 'user', 'date_of_birth', 'medical_history', 'plan', 'therapist', 'status', 'gender', 'address','profile_image']
+        fields = ['id', 'user', 'date_of_birth', 'medical_history', 'plan', 'therapist', 'status', 'gender', 'address', 'profile_image', 'first_name', 'last_name']
 
     def update(self, instance, validated_data):
-        # 1. See what the Admin set the new status to (defaults to current if not provided)
+        # 1. Extract and apply user-level fields
+        first_name = validated_data.pop('first_name', None)
+        last_name = validated_data.pop('last_name', None)
+
+        if first_name is not None:
+            instance.user.first_name = first_name
+        if last_name is not None:
+            instance.user.last_name = last_name
+
+        # 2. See what the Admin set the new status to (defaults to current if not provided)
         new_status = validated_data.get('status', instance.status)
 
-        # 2. Tie your custom status to Django's core security lock
+        # 3. Tie your custom status to Django's core security lock
         if new_status in ['Inactive', 'Archived', 'Locked']:
             instance.user.is_active = False
         elif new_status == 'Active':
             instance.user.is_active = True
 
-        instance.user.save()  # Save the lock
+        instance.user.save()  # Save user changes (name + is_active)
 
-        # 3. Save the rest of the profile data normally
+        # 4. Save the rest of the profile data normally
         return super().update(instance, validated_data)
 
 
 class TherapistProfileSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
 
+    # Accept nested user writes via separate fields
+    first_name = serializers.CharField(write_only=True, required=False)
+    last_name = serializers.CharField(write_only=True, required=False)
+
     class Meta:
         model = TherapistProfile
         fields = ['id', 'user', 'license_number', 'specialization', 'bio', 'profile_image', 'status', 'gender',
-                  'focus_areas']
+                  'focus_areas', 'first_name', 'last_name']
 
     def update(self, instance, validated_data):
+        # 1. Extract and apply user-level fields
+        first_name = validated_data.pop('first_name', None)
+        last_name = validated_data.pop('last_name', None)
+
+        if first_name is not None:
+            instance.user.first_name = first_name
+        if last_name is not None:
+            instance.user.last_name = last_name
+
+        # 2. Handle status-based account lock
         new_status = validated_data.get('status', instance.status)
 
         # For staff, we lock them out if they are Inactive or On Leave
@@ -64,7 +91,7 @@ class TherapistProfileSerializer(serializers.ModelSerializer):
         elif new_status == 'Active':
             instance.user.is_active = True
 
-        instance.user.save()
+        instance.user.save()  # Save user changes (name + is_active)
 
         return super().update(instance, validated_data)
 

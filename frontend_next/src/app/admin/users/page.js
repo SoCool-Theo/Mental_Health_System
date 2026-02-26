@@ -140,12 +140,12 @@ export default function UsersPage() {
         {/* --- DYNAMIC TABLE HEADER --- */}
         <div style={{
             display: 'grid',
-            gridTemplateColumns: activeTab === 'therapists' ? '2.5fr 1.5fr 2fr 1fr 2fr 1fr' : '2.5fr 1.5fr 2fr 1fr 2fr 1fr',
+            gridTemplateColumns: activeTab === 'therapists' ? '2.5fr 1.5fr 2fr 1fr 2fr 1fr' : '2.5fr 1.5fr 1fr 2fr 1fr',
             fontSize: '11px', color: '#888', marginBottom: '10px', padding: '0 15px', fontWeight: 'bold'
         }}>
             <span>User / ID</span>
             <span>{activeTab === 'therapists' ? 'Role' : 'Plan Type'}</span>
-            <span>{activeTab === 'therapists' ? 'Email' : 'Assigned Therapist'}</span>
+            {activeTab === 'therapists' && <span>Email</span>}
             <span>Status</span>
             <span>{activeTab === 'therapists' ? 'Last Activity' : 'Next Appointment'}</span>
             <span style={{ textAlign: 'right' }}>Actions</span>
@@ -216,7 +216,7 @@ export default function UsersPage() {
                 const patStatus = patient.status || 'Active'; // Default to active if missing
 
                 return (
-                    <div key={patient.id} className="log-row" style={{ gridTemplateColumns: '2.5fr 1.5fr 2fr 1fr 2fr 1fr' }}>
+                    <div key={patient.id} className="log-row" style={{ gridTemplateColumns: '2.5fr 1.5fr 1fr 2fr 1fr' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '32px', height: '32px', background: '#e0f7fa', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold', color: '#006064' }}>
                                 {fullName.charAt(0).toUpperCase()}
@@ -232,11 +232,6 @@ export default function UsersPage() {
                             <span style={{ background: '#f0f4f8', color: '#334155', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
                                 Standard Plan
                             </span>
-                        </div>
-
-                        {/* Assigned Therapist (Placeholder) */}
-                        <div style={{ fontSize: '13px' }}>
-                            <span style={{ color: '#999', fontStyle: 'italic' }}>View profile</span>
                         </div>
 
                         {/* DYNAMIC PATIENT STATUS */}
