@@ -23,6 +23,13 @@ class ChatThreadView(APIView):
             Q(sender_id=other_user_id, receiver=request.user)
         ).order_by('timestamp')  # Sort chronologically
 
+        # Mark all unread messages FROM the other user as read (since we're viewing them now)
+        Message.objects.filter(
+            sender_id=other_user_id,
+            receiver=request.user,
+            is_read=False
+        ).update(is_read=True)
+
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
